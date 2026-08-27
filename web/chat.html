@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CHOKEPOINT — chat</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+<div id="chat-app" class="chat-app">
+
+  <!-- ============ top bar ============ -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <a href="/" class="brand-link" title="Back to the CHOKEPOINT overview">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-linecap="round" class="logo">
+          <g stroke="#e8e4dc" stroke-width="1.75"><path d="M2.5 5.5L10.5 11.2"/><path d="M2.5 12H10.5"/><path d="M2.5 18.5L10.5 12.8"/><path d="M13.5 12H21.5"/></g>
+          <path d="M12 7V17" stroke="#d98324" stroke-width="2.4"/>
+        </svg>
+        <div class="wordmark">CHOKEPOINT</div>
+      </a>
+      <div class="range">CHAT · GROUNDED IN THE COLLECTED CORPUS</div>
+    </div>
+    <div class="topbar-right">
+      <a class="btn btn-ghost" href="/app">DIGEST</a>
+    </div>
+  </div>
+
+  <div class="chat-layout">
+    <div class="chat-thread" id="chat-thread">
+      <div class="chat-intro">
+        <div class="eyebrow accent">ASK CHOKEPOINT</div>
+        <div class="h2" style="font-size:22px;">Ask about RAM &amp; GPU supply-chain news.</div>
+        <div class="body-text" style="max-width:520px;">Answers are grounded only in documents this system has collected, cited by number. If the corpus doesn't cover it, it will say so instead of guessing.</div>
+        <div class="chat-suggest" id="chat-suggest">
+          <div class="chip" data-q="What is the latest on RAM and GPU supply and shipping?">What's the latest?</div>
+          <div class="chip" data-q="What are the tightest chokepoints right now?">Tightest chokepoints?</div>
+          <div class="chip" data-q="Any severity 4 or higher events this week?">Any severe events this week?</div>
+        </div>
+      </div>
+    </div>
+
+    <form class="chat-inputbar" id="chat-form">
+      <input type="text" id="chat-input" class="chat-input" placeholder="Ask a question about the collected news…" autocomplete="off">
+      <button type="submit" class="btn btn-primary" id="chat-send">ASK</button>
+    </form>
+  </div>
+
+</div>
+
+<script src="./chat.js"></script>
+</body>
+</html>

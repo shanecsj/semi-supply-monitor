@@ -16,6 +16,7 @@ from pathlib import Path
 import yaml
 from flask import Flask, jsonify, request, send_from_directory
 
+from . import chat as chat_mod
 from . import classify as classify_mod
 from . import db as store
 from . import digest as digest_mod
@@ -133,11 +134,21 @@ def _chokepoints(registry: Registry) -> list[dict]:
 def build_app(db_path: Path | str = store.DEFAULT_DB) -> Flask:
     app = Flask(__name__, static_folder=None)
     registry_holder: dict[str, Registry] = {}
+    chat_holder: dict[str, chat_mod.ChatSession] = {}
 
     def registry() -> Registry:
         if "r" not in registry_holder:
             registry_holder["r"] = load_registry()
         return registry_holder["r"]
+
+    def chat_session() -> chat_mod.ChatSession:
+        """One session per server process, refreshed lazily on each request
+        via ChatSession's own corpus reload - cheap since it's just a DB read."""
+        if "s" not in chat_holder:
+            chat_holder["s"] = chat_mod.ChatSession(registry(), db_path)
+        session = chat_holder["s"]
+        session.count = session.retriever.load()
+        return session
 
     @app.get("/api/digest")
     def api_digest():
@@ -196,6 +207,30 @@ def build_app(db_path: Path | str = store.DEFAULT_DB) -> Flask:
         digest_mod.collect(reg, db_path, days=days)
         return api_digest()
 
+    @app.post("/api/chat")
+    def api_chat():
+        body = request.get_json(silent=True) or {}
+        question = (body.get("question") or "").strip()
+        if not question:
+            return jsonify({"error": "question is required"}), 400
+
+        session = chat_session()
+        if session.count == 0:
+            return jsonify({
+                "answer": "The corpus is empty - run a collection first "
+                          "(RUN NOW in the digest, or `python -m semimon.cli collect`).",
+                "sources": [],
+            })
+
+        answer, hits = session.ask(question)
+        return jsonify({
+            "answer": answer,
+            "sources": [
+                {"index": h.index, "title": h.title, "source": h.source, "url": h.url}
+                for h in hits
+            ],
+        })
+
     @app.get("/api/graph/<node_id>")
     def api_graph(node_id: str):
         reg = registry()
@@ -217,6 +252,11 @@ def build_app(db_path: Path | str = store.DEFAULT_DB) -> Flask:
     @app.get("/app/")
     def app_page():
         return send_from_directory(WEB_DIR, "index.html")
+
+    @app.get("/chat")
+    @app.get("/chat/")
+    def chat_page():
+        return send_from_directory(WEB_DIR, "chat.html")
 
     @app.get("/<path:path>")
     def static_files(path: str):
