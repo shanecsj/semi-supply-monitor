@@ -1,12 +1,14 @@
 """Command line interface.
 
-    python -m semimon.cli collect              # poll every sensor
-    python -m semimon.cli digest               # cluster, classify, render
-    python -m semimon.cli run                  # collect then digest
-    python -m semimon.cli verify               # acceptance checks
-    python -m semimon.cli graph <node_id>      # propagation path
-    python -m semimon.cli resolve "<text>"     # entity resolution
-    python -m semimon.cli serve                # web UI + JSON API
+    python -m semimon.cli                      # chat (the default)
+    python -m semimon.cli "what changed in HBM" # one-shot question
+    python -m semimon.cli collect               # poll every sensor
+    python -m semimon.cli digest                # cluster, classify, render
+    python -m semimon.cli run                   # collect then digest
+    python -m semimon.cli verify                # acceptance checks
+    python -m semimon.cli graph <node_id>       # propagation path
+    python -m semimon.cli resolve "<text>"      # entity resolution
+    python -m semimon.cli serve                 # web UI + JSON API
 """
 
 from __future__ import annotations
@@ -105,6 +107,79 @@ def cmd_serve(args) -> int:
     return 0
 
 
+def cmd_chat(args) -> int:
+    """Ask questions about the collected news, grounded in the corpus."""
+    from .chat import ChatSession, OpenCodeGo, get_backend
+
+    if args.list_models:
+        try:
+            for model in OpenCodeGo.models():
+                print(f"  {model}")
+        except Exception as exc:  # noqa: BLE001
+            print(f"could not list models: {exc}")
+            return 1
+        return 0
+
+    from .chat import LATEST_QUESTION, ensure_fresh
+
+    registry = load_registry()
+    if not args.no_refresh:
+        ensure_fresh(registry, args.db, force=args.refresh)
+
+    session = ChatSession(registry, args.db, backend=get_backend(args.offline),
+                          days=args.days, use_cache=not args.no_cache)
+    if session.count == 0:
+        print("corpus is empty and collection returned nothing - check your network")
+        return 1
+    print(f"  corpus: {session.count} documents")
+
+    def answer(question: str) -> None:
+        print()
+        captured: list = []
+        for chunk, hits in session.ask_stream(question):
+            if hits:
+                captured = hits
+            sys.stdout.write(chunk)
+            sys.stdout.flush()      # unbuffered, or streaming buys nothing
+        print()
+        if captured and args.sources:
+            print("\nsources:")
+            for hit in captured[:6]:
+                print(f"  [{hit.index}] {hit.title[:78]}")
+                if hit.url:
+                    print(f"      {hit.url}")
+
+    if args.question:
+        answer(" ".join(args.question))
+        return 0
+
+    # Bare invocation leads with the latest headlines, computed locally with no
+    # model call, so "what changed?" is answered instantly. The model is for
+    # follow-up questions, where waiting is a choice the reader just made.
+    from .chat import latest_brief
+    print()
+    print(latest_brief(registry, session.retriever._docs))
+    print("\n  ask a question about any of this ('exit' to quit, "
+          "'latest' to re-list)\n")
+    while True:
+        try:
+            question = input("> ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            return 0
+        if question.lower() in {"exit", "quit", ":q"}:
+            return 0
+        if question.lower() in {"latest", "news", "l"}:
+            from .chat import latest_brief
+            print()
+            print(latest_brief(registry, session.retriever._docs))
+            print()
+            continue
+        if question:
+            answer(question)
+            print()
+
+
 def cmd_verify(args) -> int:
     """Acceptance checks from the plan. Live network, no API key required."""
     from .sensors import hard
@@ -181,7 +256,7 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(prog="semimon",
                                      description="RAM & GPU supply-chain news monitor")
     parser.add_argument("--db", default=str(store.DEFAULT_DB))
-    sub = parser.add_subparsers(dest="command", required=True)
+    sub = parser.add_subparsers(dest="command")
 
     collect = sub.add_parser("collect", help="poll every sensor")
     collect.add_argument("--days", type=int, default=7)
@@ -205,6 +280,24 @@ def main(argv=None) -> int:
     resolve.add_argument("text")
     resolve.set_defaults(func=cmd_resolve)
 
+    chat = sub.add_parser("chat", help="ask questions about the collected news")
+    chat.add_argument("question", nargs="*", help="one-shot question; omit for a REPL")
+    chat.add_argument("--days", type=int, default=None,
+                      help="restrict the corpus to the last N days")
+    chat.add_argument("--offline", action="store_true",
+                      help="retrieval only, no model call")
+    chat.add_argument("--sources", action="store_true", default=True)
+    chat.add_argument("--no-sources", dest="sources", action="store_false")
+    chat.add_argument("--list-models", action="store_true",
+                      help="list OpenCode Go model ids and exit")
+    chat.add_argument("--refresh", action="store_true",
+                      help="force a refresh even if the corpus is fresh")
+    chat.add_argument("--no-refresh", action="store_true",
+                      help="never touch the network; use the stored corpus")
+    chat.add_argument("--no-cache", action="store_true",
+                      help="bypass the cached-answer store and re-ask the model")
+    chat.set_defaults(func=cmd_chat)
+
     verify = sub.add_parser("verify", help="run acceptance checks")
     verify.add_argument("--no-market", action="store_true")
     verify.set_defaults(func=cmd_verify)
@@ -214,6 +307,15 @@ def main(argv=None) -> int:
     serve.add_argument("--port", type=int, default=5000)
     serve.add_argument("--debug", action="store_true")
     serve.set_defaults(func=cmd_serve)
+
+    # No subcommand -> chat. The app is a chat app; everything else is a tool.
+    argv = list(sys.argv[1:] if argv is None else argv)
+    known = {"collect", "digest", "run", "graph", "resolve", "chat", "verify", "serve"}
+    if not argv or (argv[0].startswith("-") and "--help" not in argv
+                    and "-h" not in argv):
+        argv = ["chat", *argv]
+    elif argv[0] not in known and not argv[0].startswith("-"):
+        argv = ["chat", *argv]          # `semimon "what changed?"` just works
 
     args = parser.parse_args(argv)
     return args.func(args)

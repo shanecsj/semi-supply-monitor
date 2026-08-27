@@ -101,6 +101,69 @@ def fetch_json(url: str, headers: Optional[dict] = None, **kwargs) -> Any:
     return json.loads(fetch(url, headers=headers, **kwargs).decode("utf-8", "replace"))
 
 
+def post_json(url: str, payload: dict, headers: Optional[dict] = None,
+              timeout: int = 120) -> Any:
+    """POST JSON and parse the JSON response.
+
+    Separate from `fetch` because inference calls want a long timeout and must
+    not be silently retried - a retried chat completion is a second charge
+    against the subscription quota, not a free do-over.
+    """
+    merged = {"Content-Type": "application/json", "User-Agent": CONTACT}
+    if headers:
+        merged.update(headers)
+    body = json.dumps(payload).encode("utf-8")
+    request = urllib.request.Request(url, data=body, headers=merged, method="POST")
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            return json.loads(response.read().decode("utf-8", "replace"))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", "replace")[:400]
+        raise FetchError(f"{url}: HTTP {exc.code} {detail}") from exc
+    except Exception as exc:  # noqa: BLE001
+        raise FetchError(f"{url}: {exc}") from exc
+
+
+def post_stream(url: str, payload: dict, headers: Optional[dict] = None,
+                timeout: int = 120):
+    """POST and yield server-sent-event text deltas as they arrive.
+
+    Total time is unchanged, but the first token lands in a second or two
+    instead of the reader staring at a blank screen for the length of the whole
+    answer. For a chat app that is the difference between "instant" and "slow".
+    """
+    import json as _json
+
+    merged = {"Content-Type": "application/json", "User-Agent": CONTACT,
+              "Accept": "text/event-stream"}
+    if headers:
+        merged.update(headers)
+    body = _json.dumps({**payload, "stream": True}).encode("utf-8")
+    request = urllib.request.Request(url, data=body, headers=merged, method="POST")
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            for raw in response:
+                line = raw.decode("utf-8", "replace").strip()
+                if not line or not line.startswith("data:"):
+                    continue
+                data = line[5:].strip()
+                if data == "[DONE]":
+                    return
+                try:
+                    chunk = _json.loads(data)
+                except ValueError:
+                    continue
+                for choice in chunk.get("choices") or []:
+                    piece = (choice.get("delta") or {}).get("content")
+                    if piece:
+                        yield piece
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", "replace")[:400]
+        raise FetchError(f"{url}: HTTP {exc.code} {detail}") from exc
+    except Exception as exc:  # noqa: BLE001
+        raise FetchError(f"{url}: {exc}") from exc
+
+
 def qs(base: str, params: dict) -> str:
     # doseq=True so list values become repeated keys (fields[]=a&fields[]=b)
     # rather than a stringified Python list, which Federal Register 400s on.

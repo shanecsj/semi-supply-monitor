@@ -8,6 +8,12 @@
 # timestamp only - never full article text. See README.
 
 gdelt:
+  # OFF by default. GDELT has failed on every run from a normal residential IP -
+  # SSL handshake timeouts, connection resets, 429s - and each failed query
+  # costs ~84s of timeout and backoff, which is the entire reason a collect run
+  # took five minutes instead of three seconds. RSS supplies every useful
+  # document anyway. Set enabled: true (or SEMIMON_USE_GDELT=1) to try it.
+  enabled: false
   # `sourcelang:eng` is required in practice; without it the API returns empty
   # result sets for otherwise valid queries.
   timespan: 7d

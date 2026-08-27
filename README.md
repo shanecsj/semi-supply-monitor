@@ -26,37 +26,91 @@ implied a direction would have been confidently backwards. So this tool reports
 
 ## Quickstart
 
-```bash
-conda create -n semi python=3.12 requests pyyaml pandas numpy scikit-learn lxml -y
-conda activate semi
-pip install anthropic
-
-export SEMIMON_CONTACT="you@example.com"        # required by SEC EDGAR, else 403
-python -m semimon.cli verify                    # acceptance checks, no API key needed
-python -m semimon.cli run --out digest.md       # collect + build digest
+```powershell
+cd D:\path	o\semi-supply-monitor
+& "path	o\envs\semi\python.exe" -m semimon.cli
 ```
 
-`SEMIMON_CONTACT` goes into the User-Agent SEC requires. It is not hardcoded, so
-the repo carries no personal address — set it or the EDGAR sensor will be rejected.
+That is the whole app. No subcommand needed — it refreshes if the corpus is
+stale, prints the latest headlines grouped by RAM / GPU / Shipping, and drops
+you at a prompt to ask about any of it.
 
-Without `ANTHROPIC_API_KEY` the pipeline still runs end-to-end using a deterministic
-heuristic classifier — blunter, explicitly low-confidence, and labelled as such in
-the output. Set the key to use the model:
+```
+  corpus is 9 min old; skipping refresh
+  corpus: 28 documents
 
-```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-python -m semimon.cli run --out digest.md
+RAM:
+  Aug 27  Kioxia weighs third Kitakami fab as NAND demand rises  (digitimes)
+  Aug 27  SK Hynix questions PIM as thermal, packaging limits constrain HBM  (digitimes)
+GPU:
+  Aug 27  Nvidia reportedly shifts HBM4 mix toward 8-high as memory supply stays tight  (digitimes)
+
+  ask a question about any of this ('exit' to quit, 'latest' to re-list)
+
+>
 ```
 
-### Other commands
+### Speed, honestly
+
+| | |
+|---|---|
+| Warm start to headlines | **~2s** |
+| Cold start (stale corpus, refreshes first) | **~5s** |
+| Asking a question (hosted LLM) | **10–25s, and it varies 2–3× run to run** |
+
+The headline view is deliberately **local and model-free** — retrieval, entity
+resolution and the dependency graph all run on your machine in milliseconds.
+That is why "what changed?" is instant. A hosted LLM call to OpenCode Go costs
+10–25 seconds no matter what you do to the prompt (measured across seven models;
+the variance is server-side, not prompt-side), so the model is reserved for
+questions you actually choose to ask.
+
+Two things got it from ~5 minutes to ~2 seconds:
+
+- **GDELT is off by default.** It failed on every single run from a residential
+  IP — SSL handshake timeouts, connection resets, 429s — and each failed query
+  burns ~84s in timeouts and backoff. RSS supplies every useful document anyway.
+  Set `enabled: true` in `config/sources.yaml` or `SEMIMON_USE_GDELT=1` to try it.
+- **Collectors run concurrently and the corpus is cached.** A refresh is ~3s, and
+  it only happens when the corpus is older than 20 minutes.
+
+### What is cached
+
+Everything, at two levels.
+
+**News** is stored permanently in `data/semimon.db` — append-only, content-hashed,
+never overwritten. The corpus accumulates across runs, and questions are answered
+*only* from it: the model is forbidden from using outside knowledge and must cite
+document numbers. `--no-refresh` skips the network entirely and answers from what
+is already stored.
+
+**Answers** are cached too, keyed on `(question, corpus fingerprint, model)`. Ask
+the same thing twice and the second is instant instead of 10-25s, and costs no
+subscription quota. The fingerprint is a hash of the document ids in play, so
+collecting new news invalidates cached answers automatically — no expiry policy,
+and no risk of replaying yesterday's answer as though it were current. Backend
+errors are never cached. `--no-cache` bypasses it.
+
+### Commands
 
 ```bash
-python -m semimon.cli graph hynix_icheon        # propagation path for one node
+python -m semimon.cli                       # chat (the default)
+python -m semimon.cli "what changed in HBM"  # one-shot question
+python -m semimon.cli --no-refresh          # never touch the network
+python -m semimon.cli --refresh             # force a refresh
+python -m semimon.cli --no-cache            # re-ask the model, ignore cached answers
+python -m semimon.cli graph hynix_icheon    # propagation path for a node
 python -m semimon.cli resolve "SK Hynix Icheon fab halted"
-python -m semimon.cli collect --days 14         # poll sensors only
-python -m semimon.cli digest --offline          # force heuristic classifier
-python -m semimon.cli serve                     # web UI + JSON API, http://127.0.0.1:5000
+python -m semimon.cli collect --days 14     # poll sensors only
+python -m semimon.cli digest --offline      # force heuristic classifier
+python -m semimon.cli digest --out d.md     # full classified digest (slow: ~30min)
+python -m semimon.cli verify                # health check
+python -m semimon.cli serve                 # web UI + JSON API, http://127.0.0.1:5000
 ```
+
+`digest` is the original batch report. It classifies every cluster with the LLM,
+which at 10–25s per call takes ~30 minutes. It is no longer on the interactive
+path.
 
 ## Web UI
 
@@ -157,6 +211,8 @@ semimon/sensors/         base (throttling), hard, narrative
 semimon/cluster.py       TF-IDF story clustering
 semimon/classify.py      LLM + heuristic classifiers
 semimon/market.py        abnormal-return annotation
+semimon/chat.py          grounded RAG chat over the corpus (OpenCode Go)
+semimon/dotenv.py        minimal .env loader, no dependency
 semimon/digest.py        pipeline and markdown rendering
 semimon/api.py           JSON API + static server for the web UI
 semimon/cli.py           command line

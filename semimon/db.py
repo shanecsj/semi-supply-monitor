@@ -77,6 +77,15 @@ CREATE TABLE IF NOT EXISTS market_bars (
     PRIMARY KEY (ticker, date)
 );
 
+CREATE TABLE IF NOT EXISTS answer_cache (
+    question    TEXT NOT NULL,       -- normalised
+    fingerprint TEXT NOT NULL,       -- hash of the corpus the answer was built on
+    model       TEXT NOT NULL,
+    answer      TEXT NOT NULL,
+    created_at  TEXT NOT NULL,
+    PRIMARY KEY (question, fingerprint, model)
+);
+
 CREATE TABLE IF NOT EXISTS alerts (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     cluster_id INTEGER REFERENCES clusters(id),
