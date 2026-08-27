@@ -48,6 +48,42 @@ export ANTHROPIC_API_KEY=sk-ant-...
 python -m semimon.cli run --out digest.md
 ```
 
+## Chat
+
+Ask questions about the news the monitor has collected.
+
+```bash
+export OPENCODE_API_KEY=...                     # https://opencode.ai/go, $10/month
+python -m semimon.cli chat                      # REPL
+python -m semimon.cli chat "what is happening with HBM supply"
+python -m semimon.cli chat --list-models        # live model ids, no key needed
+```
+
+**This is grounded retrieval, not a chatbot.** The model may only use documents
+this system actually collected, must cite them by number, and is instructed to say
+what is missing rather than fill a gap from general knowledge. For a supply-chain
+tool that constraint is the point: a fluent invention about a fab fire is worse than
+no answer, because the reader cannot tell the two apart.
+
+Three things enter the context window — retrieved documents (TF-IDF plus an
+entity-overlap boost), **propagation paths from the dependency graph**, and the
+question. The graph is what lets it answer *"why would an HBM problem affect Nvidia
+GPUs?"* when no single article says so: the answer is `SK Hynix → DRAM die → HBM
+stack (1-3wk) → CoWoS (2-5wk) → GPU module`, which is graph traversal, not news.
+Consumer-side nodes like NVIDIA and AMD supply nothing downstream, so they get the
+*upstream* view of what feeds them.
+
+Backend is [OpenCode Go](https://opencode.ai/go) via its OpenAI-compatible endpoint
+(`https://opencode.ai/zen/go/v1/chat/completions`), behind a `ChatBackend` protocol
+so the provider is swappable. Default model `glm-5.3`; override with
+`SEMIMON_CHAT_MODEL` (e.g. `deepseek-v4-flash` for a higher request quota,
+`kimi-k3` or `deepseek-v4-pro` for harder questions). Without a key it degrades to
+extractive retrieval — it shows you the matching documents and declines to
+synthesise, rather than faking an answer.
+
+Note this is independent of the Anthropic classifier used for the digest; the two
+providers do not interact.
+
 ### Other commands
 
 ```bash
@@ -135,6 +171,7 @@ semimon/sensors/         base (throttling), hard, narrative
 semimon/cluster.py       TF-IDF story clustering
 semimon/classify.py      LLM + heuristic classifiers
 semimon/market.py        abnormal-return annotation
+semimon/chat.py          grounded RAG chat over the corpus (OpenCode Go)
 semimon/digest.py        pipeline and markdown rendering
 semimon/cli.py           command line
 tests/                   pytest suite

@@ -95,6 +95,56 @@ def cmd_resolve(args) -> int:
     return 0
 
 
+def cmd_chat(args) -> int:
+    """Ask questions about the collected news, grounded in the corpus."""
+    from .chat import ChatSession, OpenCodeGo, get_backend
+
+    if args.list_models:
+        try:
+            for model in OpenCodeGo.models():
+                print(f"  {model}")
+        except Exception as exc:  # noqa: BLE001
+            print(f"could not list models: {exc}")
+            return 1
+        return 0
+
+    registry = load_registry()
+    session = ChatSession(registry, args.db, backend=get_backend(args.offline),
+                          days=args.days)
+    if session.count == 0:
+        print("corpus is empty - run `python -m semimon.cli collect` first")
+        return 1
+    print(f"  corpus: {session.count} documents")
+
+    def answer(question: str) -> None:
+        text, hits = session.ask(question)
+        print()
+        print(text)
+        if hits and args.sources:
+            print("\nsources:")
+            for hit in hits[:6]:
+                print(f"  [{hit.index}] {hit.title[:78]}")
+                if hit.url:
+                    print(f"      {hit.url}")
+
+    if args.question:
+        answer(" ".join(args.question))
+        return 0
+
+    print("  ask a question, or 'exit' to quit\n")
+    while True:
+        try:
+            question = input("> ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            return 0
+        if question.lower() in {"exit", "quit", ":q"}:
+            return 0
+        if question:
+            answer(question)
+            print()
+
+
 def cmd_verify(args) -> int:
     """Acceptance checks from the plan. Live network, no API key required."""
     from .sensors import hard
@@ -194,6 +244,18 @@ def main(argv=None) -> int:
     resolve = sub.add_parser("resolve", help="entity-resolve some text")
     resolve.add_argument("text")
     resolve.set_defaults(func=cmd_resolve)
+
+    chat = sub.add_parser("chat", help="ask questions about the collected news")
+    chat.add_argument("question", nargs="*", help="one-shot question; omit for a REPL")
+    chat.add_argument("--days", type=int, default=None,
+                      help="restrict the corpus to the last N days")
+    chat.add_argument("--offline", action="store_true",
+                      help="retrieval only, no model call")
+    chat.add_argument("--sources", action="store_true", default=True)
+    chat.add_argument("--no-sources", dest="sources", action="store_false")
+    chat.add_argument("--list-models", action="store_true",
+                      help="list OpenCode Go model ids and exit")
+    chat.set_defaults(func=cmd_chat)
 
     verify = sub.add_parser("verify", help="run acceptance checks")
     verify.add_argument("--no-market", action="store_true")

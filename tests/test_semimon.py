@@ -162,6 +162,58 @@ def test_heuristic_never_claims_high_confidence(registry):
 
 # ------------------------------------------------------------------ prefilter
 
+# ----------------------------------------------------------------------- chat
+
+def test_upstream_path_for_consumer_only_node(registry):
+    """NVIDIA supplies nothing, so a downstream walk is empty. The useful view
+    is what feeds it."""
+    path = registry.explain("nvidia")
+    assert "->" in path and path.endswith("NVIDIA")
+    assert "CoWoS" in path
+
+
+def test_upstream_lag_bounds_are_ordered(registry):
+    """Regression: rebasing cumulative lags produced inverted bounds ("87-29wk")."""
+    path = registry.critical_upstream("gpu_module")
+    assert path
+    assert all(s.cum_lag_min <= s.cum_lag_max for s in path)
+    # Lag shrinks as the path approaches the target stage.
+    assert [s.cum_lag_max for s in path] == sorted(
+        [s.cum_lag_max for s in path], reverse=True)
+
+
+def test_downstream_unaffected_by_upstream_support(registry):
+    assert "HBM stack" in registry.explain("hynix_icheon")
+
+
+def test_build_context_includes_documents_and_paths(registry):
+    from semimon.chat import Retrieved, build_context
+    hits = [Retrieved(1, "SK Hynix Icheon fab halted", "body", "rss:x",
+                      "https://e.com", "Thu, 27 Aug 2026 10:00:00 +0000", 0.9)]
+    context = build_context(registry, "what happened at Hynix?", hits)
+    assert "[1] SK Hynix Icheon fab halted" in context
+    assert "(2026-08-27)" in context          # RFC-822 parsed, not sliced
+    assert "PROPAGATION PATHS" in context
+    assert "QUESTION" in context
+
+
+def test_extractive_backend_does_not_invent(registry):
+    """Without a key the fallback must return retrieval, not fluent prose."""
+    from semimon.chat import ExtractiveBackend
+    out = ExtractiveBackend().complete(
+        [{"role": "user", "content": "DOCUMENTS\n\n[1] Kioxia halts output\n"}])
+    assert "Kioxia halts output" in out
+    assert "retrieval only" in out
+
+
+def test_system_prompt_forbids_ungrounded_answers():
+    from semimon.chat import SYSTEM_PROMPT
+    lowered = SYSTEM_PROMPT.lower()
+    assert "only from" in lowered
+    assert "cite" in lowered
+    assert "investment advice" in lowered
+
+
 def test_prefilter_drops_unrelated(registry):
     from semimon.sensors.narrative import prefilter
     docs = [

@@ -103,8 +103,10 @@ class Registry:
             for e in raw["edges"]
         ]
         self._out: dict[str, list[Edge]] = {}
+        self._in: dict[str, list[Edge]] = {}
         for edge in self.edges:
             self._out.setdefault(edge.src, []).append(edge)
+            self._in.setdefault(edge.dst, []).append(edge)
 
         self._alias_patterns = self._build_alias_patterns()
         self._site_locations = self._build_site_locations()
@@ -304,6 +306,49 @@ class Registry:
             key=lambda p: sum(self.nodes[s.stage].concentration for s in p) / len(p),
         )
 
+    def upstream(self, stage_id: str, max_depth: int = 6) -> list[list[PathStep]]:
+        """All inbound paths feeding a stage, ordered source -> stage.
+
+        The mirror of `downstream`. Needed because consumer-side nodes (NVIDIA,
+        AMD) supply nothing, so a downstream walk from them is empty and the
+        useful question is "what feeds this?" rather than "what does it feed?".
+        """
+        if stage_id not in self.nodes:
+            return []
+        paths: list[list[PathStep]] = []
+
+        def walk(current: str, trail: list[PathStep], depth: int) -> None:
+            ins = self._in.get(current, [])
+            if not ins or depth >= max_depth:
+                if len(trail) > 1:
+                    # Reverse so the path reads source -> ... -> stage. Each
+                    # step's accumulated lag is already its distance to the
+                    # target stage, so no rebasing is needed (an earlier attempt
+                    # to rebase produced inverted bounds like "87-29wk").
+                    paths.append(list(reversed(trail)))
+                return
+            for edge in ins:
+                step = PathStep(
+                    stage=edge.src,
+                    name=self.nodes[edge.src].name,
+                    cum_lag_min=trail[-1].cum_lag_min + edge.lag_min,
+                    cum_lag_max=trail[-1].cum_lag_max + edge.lag_max,
+                )
+                walk(edge.src, trail + [step], depth + 1)
+
+        root = PathStep(stage_id, self.nodes[stage_id].name, 0, 0)
+        walk(stage_id, [root], 0)
+        return paths
+
+    def critical_upstream(self, stage_id: str) -> list[PathStep]:
+        paths = self.upstream(stage_id)
+        if not paths:
+            return []
+        return max(
+            paths,
+            key=lambda p: sum(self.nodes[s.stage].concentration for s in p) / len(p),
+        )
+
     def explain(self, node_id: str) -> str:
         """One-line propagation sentence, the core of a digest entry.
 
@@ -315,6 +360,15 @@ class Registry:
             return ""
         stages = self.stages_for([node_id])
         if not stages:
+            # Consumer-only node (NVIDIA, AMD): show what feeds it instead.
+            if node.consumes:
+                path = self.critical_upstream(node.consumes[0])
+                if path:
+                    rendered = " -> ".join(
+                        s.name if s.cum_lag_max == 0
+                        else f"{s.name} ({s.cum_lag_min}-{s.cum_lag_max}wk upstream)"
+                        for s in path)
+                    return f"{rendered} -> {node.name}"
             return node.name
         path = self.critical_path(stages[0])
         if not path:

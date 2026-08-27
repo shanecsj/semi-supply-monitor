@@ -17,3 +17,4 @@ __pycache__/
 # go
 chat/chat
 chat/chat.exe
+node_modules/

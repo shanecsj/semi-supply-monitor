@@ -1,0 +1,26 @@
+{
+  "name": "semi-supply-monitor",
+  "version": "1.0.0",
+  "description": "Tracks supplier and shipping news for **RAM (DRAM/NAND)** and **GPU/accelerator** supply chains. Classifies risk, explains the propagation path, and drafts an alert.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shanecsj/semi-supply-monitor.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/shanecsj/semi-supply-monitor/issues"
+  },
+  "homepage": "https://github.com/shanecsj/semi-supply-monitor#readme",
+  "dependencies": {
+    "opencode-ai": "^1.18.23"
+  }
+}
