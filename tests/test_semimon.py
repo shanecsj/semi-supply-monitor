@@ -6,6 +6,8 @@ so this suite stays fast and deterministic.
 
 from __future__ import annotations
 
+import os
+
 import pytest
 
 from semimon.classify import HeuristicClassifier, _quake_severity
@@ -308,3 +310,51 @@ def test_prefilter_drops_unrelated(registry):
     kept = prefilter(docs, registry)
     assert len(kept) == 1
     assert "Micron" in kept[0]["title"]
+
+
+# --------------------------------------------------------------------- dotenv
+
+def test_dotenv_parses_shapes(tmp_path, monkeypatch):
+    from semimon.dotenv import load_dotenv
+    (tmp_path / ".env").write_text(
+        "# comment\n"
+        "\n"
+        "PLAIN=value\n"
+        "export EXPORTED=exported\n"
+        'QUOTED="has spaces"\n'
+        "SINGLE='single'\n"
+        "TRAILING=value # inline comment\n",
+        encoding="utf-8")
+    for key in ("PLAIN", "EXPORTED", "QUOTED", "SINGLE", "TRAILING"):
+        monkeypatch.delenv(key, raising=False)
+    applied = load_dotenv(tmp_path / ".env")
+    assert applied["PLAIN"] == "value"
+    assert applied["EXPORTED"] == "exported"
+    assert applied["QUOTED"] == "has spaces"
+    assert applied["SINGLE"] == "single"
+    assert applied["TRAILING"] == "value"
+
+
+def test_dotenv_skips_unfilled_placeholder(tmp_path, monkeypatch):
+    """An untouched .env must not set the key to the literal placeholder,
+    which would produce a confusing 401 instead of 'no credentials'."""
+    from semimon.dotenv import load_dotenv
+    monkeypatch.delenv("OPENCODE_API_KEY", raising=False)
+    (tmp_path / ".env").write_text(
+        "OPENCODE_API_KEY=<paste-your-opencode-go-key-here>\n", encoding="utf-8")
+    assert load_dotenv(tmp_path / ".env") == {}
+    assert "OPENCODE_API_KEY" not in os.environ
+
+
+def test_real_environment_wins_over_dotenv(tmp_path, monkeypatch):
+    from semimon.dotenv import load_dotenv
+    monkeypatch.setenv("SEMIMON_CONTACT", "real@example.com")
+    (tmp_path / ".env").write_text("SEMIMON_CONTACT=file@example.com\n",
+                                   encoding="utf-8")
+    load_dotenv(tmp_path / ".env")
+    assert os.environ["SEMIMON_CONTACT"] == "real@example.com"
+
+
+def test_missing_dotenv_is_not_an_error(tmp_path):
+    from semimon.dotenv import load_dotenv
+    assert load_dotenv(tmp_path / "nope.env") == {}

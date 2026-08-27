@@ -39,6 +39,23 @@ python -m semimon.cli run --out digest.md       # collect + build digest
 `SEMIMON_CONTACT` goes into the User-Agent SEC requires. It is not hardcoded, so
 the repo carries no personal address — set it or the EDGAR sensor will be rejected.
 
+## Configuration
+
+Copy the example and fill in your key:
+
+```bash
+cp .env.example .env      # Windows: copy .env.example .env
+```
+
+`.env` is gitignored and loaded automatically at import. Two behaviours worth
+knowing: a real environment variable always overrides the file, and an unfilled
+`<placeholder>` is skipped rather than passed along as a key (which would produce
+a confusing 401 instead of an honest "no credentials found").
+
+Do **not** put `PYTHONIOENCODING` in `.env` — Python reads it at interpreter
+startup, before any loader runs, so it has no effect there. The CLI reconfigures
+stdout to UTF-8 itself.
+
 ## One key runs everything
 
 A single [OpenCode Go](https://opencode.ai/go) subscription ($10/month) drives both
@@ -195,6 +212,7 @@ semimon/cluster.py       TF-IDF story clustering
 semimon/classify.py      LLM + heuristic classifiers
 semimon/market.py        abnormal-return annotation
 semimon/chat.py          grounded RAG chat over the corpus (OpenCode Go)
+semimon/dotenv.py        minimal .env loader, no dependency
 semimon/digest.py        pipeline and markdown rendering
 semimon/cli.py           command line
 tests/                   pytest suite
