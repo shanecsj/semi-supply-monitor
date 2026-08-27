@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import os
 import re
+from pathlib import Path
 from typing import List, Literal, Optional, Protocol, Sequence
 
 from pydantic import BaseModel, Field
@@ -250,6 +251,19 @@ class HeuristicClassifier:
         return " ".join(bits)
 
 
+def has_credentials() -> bool:
+    """Whether the Anthropic SDK will find credentials.
+
+    An unset ANTHROPIC_API_KEY does NOT mean there are none. The SDK also reads
+    an OAuth profile written by `ant auth login`, and a bare Anthropic() client
+    works from that with no env var set - so checking env vars alone silently
+    downgrades an authenticated user to the heuristic classifier.
+    """
+    if os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"):
+        return True
+    return (Path.home() / ".config" / "anthropic").is_dir()
+
+
 def get_classifier(registry: Registry, force_offline: bool = False):
     """LLM when credentials exist, heuristic otherwise. Prints which, because
     silently degrading to worse judgement is how you end up trusting a digest
@@ -257,9 +271,9 @@ def get_classifier(registry: Registry, force_offline: bool = False):
     if force_offline:
         print("  classifier: heuristic (offline, forced)")
         return HeuristicClassifier(registry)
-    if not (os.environ.get("ANTHROPIC_API_KEY")
-            or os.environ.get("ANTHROPIC_AUTH_TOKEN")):
-        print("  classifier: heuristic (no ANTHROPIC_API_KEY found)")
+    if not has_credentials():
+        print("  classifier: heuristic (no Anthropic credentials found - set "
+              "ANTHROPIC_API_KEY or run `ant auth login`)")
         return HeuristicClassifier(registry)
     try:
         classifier = LLMClassifier()
