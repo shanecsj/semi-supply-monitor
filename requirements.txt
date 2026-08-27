@@ -1,0 +1,8 @@
+requests
+PyYAML
+lxml
+scikit-learn
+numpy
+pandas
+anthropic
+pytest

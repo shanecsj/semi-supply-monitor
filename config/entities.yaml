@@ -1,0 +1,304 @@
+# Layer 0 - Entity & chokepoint registry for RAM (DRAM/NAND) and GPU supply chains.
+#
+# Node types:
+#   company    - corporate entity; carries tickers + filing IDs
+#   site       - physical fab / packaging plant; carries lat/lon for geospatial sensor joins
+#   stage      - a step in the chain (a product or process); the graph's structural backbone
+#   route      - a shipping corridor or port; tracked via news, not telemetry
+#
+# concentration: 0..1 supplier-concentration proxy (1.0 = effectively single-sourced).
+#                Drives how alarming a disruption at this node is.
+# Coordinates are approximate to ~1km, well inside the radius joins that consume them.
+
+nodes:
+
+  # ---------------------------------------------------------------- stages
+  - {id: silicon_wafer,   type: stage, name: "Silicon wafer",              concentration: 0.70}
+  - {id: photoresist,     type: stage, name: "Photoresist & specialty chemicals", concentration: 0.80}
+  - {id: litho_equipment, type: stage, name: "Lithography equipment",      concentration: 0.95}
+  - {id: abf_substrate,   type: stage, name: "ABF substrate",              concentration: 0.70}
+  - {id: logic_wafer,     type: stage, name: "Leading-edge logic wafer (N3/N4/N2)", concentration: 0.90}
+  - {id: dram_die,        type: stage, name: "DRAM die",                   concentration: 0.55}
+  - {id: nand_die,        type: stage, name: "NAND die",                   concentration: 0.40}
+  - {id: hbm_stack,       type: stage, name: "HBM stack",                  concentration: 0.75}
+  - {id: cowos,           type: stage, name: "CoWoS / SoIC advanced packaging", concentration: 0.95}
+  - {id: osat,            type: stage, name: "Commodity OSAT packaging",   concentration: 0.35}
+  - {id: gpu_module,      type: stage, name: "GPU / accelerator module",   concentration: 0.85}
+  - {id: dram_module,     type: stage, name: "DDR5 module",                concentration: 0.30}
+  - {id: ssd,             type: stage, name: "SSD / storage",              concentration: 0.30}
+  - {id: server_board,    type: stage, name: "Server board & system assembly", concentration: 0.40}
+  - {id: retail_supply,   type: stage, name: "Retail / channel supply",    concentration: 0.10}
+
+  # ---------------------------------------------------------------- companies
+  - id: tsmc
+    type: company
+    name: "TSMC"
+    aliases: ["TSMC", "Taiwan Semiconductor", "Taiwan Semiconductor Manufacturing"]
+    country: TW
+    tickers: ["TSM", "2330.TW"]
+    filing_ids: {sec_cik: "1046179", twse: "2330"}
+    supplies: [logic_wafer, cowos]
+
+  - id: samsung
+    type: company
+    name: "Samsung Electronics"
+    aliases: ["Samsung", "Samsung Electronics", "Samsung Semiconductor"]
+    country: KR
+    tickers: ["005930.KS"]
+    filing_ids: {dart_corp_code: "00126380"}
+    supplies: [dram_die, nand_die, hbm_stack, logic_wafer]
+
+  - id: sk_hynix
+    type: company
+    name: "SK Hynix"
+    aliases: ["SK Hynix", "Hynix", "SK Hynix Inc"]
+    country: KR
+    tickers: ["000660.KS"]
+    filing_ids: {dart_corp_code: "00164779"}
+    supplies: [dram_die, nand_die, hbm_stack]
+
+  - id: micron
+    type: company
+    name: "Micron Technology"
+    aliases: ["Micron", "Micron Technology", "Crucial"]
+    country: US
+    tickers: ["MU"]
+    filing_ids: {sec_cik: "723125"}
+    supplies: [dram_die, nand_die, hbm_stack]
+
+  - id: kioxia
+    type: company
+    name: "Kioxia"
+    aliases: ["Kioxia", "Toshiba Memory"]
+    country: JP
+    tickers: ["285A.T"]
+    supplies: [nand_die]
+
+  - id: sandisk
+    type: company
+    name: "SanDisk"
+    aliases: ["SanDisk", "Western Digital"]
+    country: US
+    tickers: ["SNDK"]
+    filing_ids: {sec_cik: "106040"}
+    supplies: [nand_die]
+
+  - id: nanya
+    type: company
+    name: "Nanya Technology"
+    aliases: ["Nanya", "Nanya Technology"]
+    country: TW
+    tickers: ["2408.TW"]
+    filing_ids: {twse: "2408"}
+    supplies: [dram_die]
+
+  - id: winbond
+    type: company
+    name: "Winbond Electronics"
+    aliases: ["Winbond"]
+    country: TW
+    tickers: ["2344.TW"]
+    filing_ids: {twse: "2344"}
+    supplies: [dram_die]
+
+  - id: ase
+    type: company
+    name: "ASE Technology"
+    aliases: ["ASE", "ASE Technology", "Advanced Semiconductor Engineering"]
+    country: TW
+    tickers: ["ASX", "3711.TW"]
+    filing_ids: {sec_cik: "1122411", twse: "3711"}
+    supplies: [osat]
+
+  - id: amkor
+    type: company
+    name: "Amkor Technology"
+    aliases: ["Amkor", "Amkor Technology"]
+    country: US
+    tickers: ["AMKR"]
+    filing_ids: {sec_cik: "1047127"}
+    supplies: [osat]
+
+  - id: ibiden
+    type: company
+    name: "Ibiden"
+    aliases: ["Ibiden"]
+    country: JP
+    tickers: ["4062.T"]
+    supplies: [abf_substrate]
+
+  - id: shinko
+    type: company
+    name: "Shinko Electric Industries"
+    aliases: ["Shinko", "Shinko Electric"]
+    country: JP
+    supplies: [abf_substrate]
+
+  - id: unimicron
+    type: company
+    name: "Unimicron Technology"
+    aliases: ["Unimicron"]
+    country: TW
+    tickers: ["3037.TW"]
+    filing_ids: {twse: "3037"}
+    supplies: [abf_substrate]
+
+  - id: shin_etsu
+    type: company
+    name: "Shin-Etsu Chemical"
+    aliases: ["Shin-Etsu", "Shin Etsu"]
+    country: JP
+    tickers: ["4063.T"]
+    supplies: [silicon_wafer, photoresist]
+
+  - id: sumco
+    type: company
+    name: "SUMCO"
+    aliases: ["SUMCO"]
+    country: JP
+    tickers: ["3436.T"]
+    supplies: [silicon_wafer]
+
+  - id: jsr
+    type: company
+    name: "JSR Corporation"
+    aliases: ["JSR", "JSR Corporation"]
+    country: JP
+    supplies: [photoresist]
+
+  - id: tok
+    type: company
+    name: "Tokyo Ohka Kogyo"
+    aliases: ["Tokyo Ohka", "Tokyo Ohka Kogyo"]
+    country: JP
+    tickers: ["4186.T"]
+    supplies: [photoresist]
+
+  - id: asml
+    type: company
+    name: "ASML"
+    aliases: ["ASML", "ASML Holding"]
+    country: NL
+    tickers: ["ASML"]
+    supplies: [litho_equipment]
+
+  - id: applied_materials
+    type: company
+    name: "Applied Materials"
+    aliases: ["Applied Materials"]
+    country: US
+    tickers: ["AMAT"]
+    filing_ids: {sec_cik: "6951"}
+    supplies: [litho_equipment]
+
+  - id: lam_research
+    type: company
+    name: "Lam Research"
+    aliases: ["Lam Research"]
+    country: US
+    tickers: ["LRCX"]
+    filing_ids: {sec_cik: "707549"}
+    supplies: [litho_equipment]
+
+  - id: tel
+    type: company
+    name: "Tokyo Electron"
+    aliases: ["Tokyo Electron"]
+    country: JP
+    tickers: ["8035.T"]
+    supplies: [litho_equipment]
+
+  - id: nvidia
+    type: company
+    name: "NVIDIA"
+    aliases: ["Nvidia", "NVIDIA Corporation"]
+    country: US
+    tickers: ["NVDA"]
+    filing_ids: {sec_cik: "1045810"}
+    consumes: [gpu_module]
+
+  - id: amd
+    type: company
+    name: "AMD"
+    aliases: ["AMD", "Advanced Micro Devices"]
+    country: US
+    tickers: ["AMD"]
+    filing_ids: {sec_cik: "2488"}
+    consumes: [gpu_module]
+
+  - id: intel
+    type: company
+    name: "Intel"
+    aliases: ["Intel", "Intel Corporation"]
+    country: US
+    tickers: ["INTC"]
+    filing_ids: {sec_cik: "50863"}
+    supplies: [logic_wafer]
+    consumes: [gpu_module]
+
+  # ---------------------------------------------------------------- sites (lat/lon drive sensor joins)
+  - {id: tsmc_hsinchu,      type: site, parent: tsmc,      name: "TSMC Fab 12 (Hsinchu)",      country: TW, lat: 24.77, lon: 121.00,  produces: [logic_wafer]}
+  - {id: tsmc_tainan,       type: site, parent: tsmc,      name: "TSMC Fab 14/18 (Tainan)",    country: TW, lat: 23.10, lon: 120.28,  produces: [logic_wafer]}
+  - {id: tsmc_taichung,     type: site, parent: tsmc,      name: "TSMC Fab 15 (Taichung)",     country: TW, lat: 24.26, lon: 120.63,  produces: [logic_wafer]}
+  - {id: tsmc_chunan,       type: site, parent: tsmc,      name: "TSMC AP (Chunan, CoWoS)",    country: TW, lat: 24.69, lon: 120.88,  produces: [cowos]}
+  - {id: tsmc_arizona,      type: site, parent: tsmc,      name: "TSMC Arizona",               country: US, lat: 33.73, lon: -112.10, produces: [logic_wafer]}
+  - {id: samsung_pyeongtaek, type: site, parent: samsung,  name: "Samsung Pyeongtaek",         country: KR, lat: 37.00, lon: 127.06,  produces: [dram_die, nand_die, hbm_stack]}
+  - {id: samsung_hwaseong,  type: site, parent: samsung,   name: "Samsung Hwaseong",           country: KR, lat: 37.20, lon: 127.05,  produces: [dram_die, logic_wafer]}
+  - {id: samsung_xian,      type: site, parent: samsung,   name: "Samsung Xian",               country: CN, lat: 34.37, lon: 108.85,  produces: [nand_die]}
+  - {id: hynix_icheon,      type: site, parent: sk_hynix,  name: "SK Hynix Icheon",            country: KR, lat: 37.28, lon: 127.44,  produces: [dram_die, hbm_stack]}
+  - {id: hynix_cheongju,    type: site, parent: sk_hynix,  name: "SK Hynix Cheongju",          country: KR, lat: 36.63, lon: 127.49,  produces: [nand_die, hbm_stack]}
+  - {id: hynix_wuxi,        type: site, parent: sk_hynix,  name: "SK Hynix Wuxi",              country: CN, lat: 31.57, lon: 120.29,  produces: [dram_die]}
+  - {id: micron_hiroshima,  type: site, parent: micron,    name: "Micron Hiroshima",           country: JP, lat: 34.47, lon: 132.75,  produces: [dram_die]}
+  - {id: micron_taichung,   type: site, parent: micron,    name: "Micron Taichung",            country: TW, lat: 24.19, lon: 120.61,  produces: [dram_die, hbm_stack]}
+  - {id: micron_boise,      type: site, parent: micron,    name: "Micron Boise",               country: US, lat: 43.55, lon: -116.23, produces: [dram_die]}
+  - {id: micron_xian,       type: site, parent: micron,    name: "Micron Xian (backend)",      country: CN, lat: 34.37, lon: 108.85,  produces: [dram_module]}
+  - {id: kioxia_yokkaichi,  type: site, parent: kioxia,    name: "Kioxia Yokkaichi",           country: JP, lat: 34.97, lon: 136.62,  produces: [nand_die]}
+  - {id: kioxia_kitakami,   type: site, parent: kioxia,    name: "Kioxia Kitakami",            country: JP, lat: 39.28, lon: 141.11,  produces: [nand_die]}
+  - {id: nanya_taoyuan,     type: site, parent: nanya,     name: "Nanya Taoyuan",              country: TW, lat: 24.95, lon: 121.25,  produces: [dram_die]}
+  - {id: winbond_kaohsiung, type: site, parent: winbond,   name: "Winbond Kaohsiung (Luzhu)",  country: TW, lat: 22.75, lon: 120.30,  produces: [dram_die]}
+  - {id: ase_kaohsiung,     type: site, parent: ase,       name: "ASE Kaohsiung",              country: TW, lat: 22.58, lon: 120.35,  produces: [osat]}
+  - {id: amkor_incheon,     type: site, parent: amkor,     name: "Amkor K4 (Incheon)",         country: KR, lat: 37.45, lon: 126.70,  produces: [osat]}
+  - {id: ibiden_ogaki,      type: site, parent: ibiden,    name: "Ibiden Ogaki",               country: JP, lat: 35.36, lon: 136.61,  produces: [abf_substrate]}
+  - {id: shinko_nagano,     type: site, parent: shinko,    name: "Shinko Nagano",              country: JP, lat: 36.65, lon: 138.19,  produces: [abf_substrate]}
+  - {id: unimicron_taoyuan, type: site, parent: unimicron, name: "Unimicron Taoyuan",          country: TW, lat: 24.95, lon: 121.22,  produces: [abf_substrate]}
+  - {id: shinetsu_naoetsu,  type: site, parent: shin_etsu, name: "Shin-Etsu Naoetsu",          country: JP, lat: 37.18, lon: 138.25,  produces: [silicon_wafer, photoresist]}
+  - {id: sumco_imari,       type: site, parent: sumco,     name: "SUMCO Imari",                country: JP, lat: 33.27, lon: 129.88,  produces: [silicon_wafer]}
+  - {id: jsr_yokkaichi,     type: site, parent: jsr,       name: "JSR Yokkaichi",              country: JP, lat: 34.95, lon: 136.63,  produces: [photoresist]}
+  - {id: tok_kawasaki,      type: site, parent: tok,       name: "TOK Kawasaki",               country: JP, lat: 35.53, lon: 139.70,  produces: [photoresist]}
+  - {id: asml_veldhoven,    type: site, parent: asml,      name: "ASML Veldhoven",             country: NL, lat: 51.42, lon: 5.40,    produces: [litho_equipment]}
+
+  # ---------------------------------------------------------------- routes (news-tracked, not telemetry)
+  - {id: route_tw_air,    type: route, name: "Taiwan air cargo corridor (TPE outbound)", country: TW, lat: 25.08, lon: 121.23, mode: air, carries: [logic_wafer, cowos, gpu_module]}
+  - {id: route_kr_air,    type: route, name: "Korea air cargo corridor (ICN outbound)",  country: KR, lat: 37.46, lon: 126.44, mode: air, carries: [dram_die, nand_die, hbm_stack]}
+  - {id: route_hk_air,    type: route, name: "Hong Kong air cargo hub (HKG)",            country: HK, lat: 22.31, lon: 113.91, mode: air, carries: [dram_module, ssd, gpu_module]}
+  - {id: route_tw_strait, type: route, name: "Taiwan Strait",                            country: TW, lat: 24.50, lon: 119.50, mode: sea, carries: [server_board, retail_supply]}
+  - {id: port_kaohsiung,  type: route, name: "Port of Kaohsiung",                        country: TW, lat: 22.61, lon: 120.28, mode: sea, carries: [server_board]}
+  - {id: port_busan,      type: route, name: "Port of Busan",                            country: KR, lat: 35.10, lon: 129.04, mode: sea, carries: [server_board]}
+  - {id: port_shanghai,   type: route, name: "Port of Shanghai",                         country: CN, lat: 30.63, lon: 122.06, mode: sea, carries: [server_board, retail_supply]}
+
+# Directed dependency edges: `from` feeds `to`, with a propagation lag range in weeks.
+edges:
+  - {from: silicon_wafer,   to: logic_wafer,   lag_weeks: [4, 10]}
+  - {from: silicon_wafer,   to: dram_die,      lag_weeks: [4, 10]}
+  - {from: silicon_wafer,   to: nand_die,      lag_weeks: [4, 10]}
+  - {from: photoresist,     to: logic_wafer,   lag_weeks: [3, 8]}
+  - {from: photoresist,     to: dram_die,      lag_weeks: [3, 8]}
+  - {from: litho_equipment, to: logic_wafer,   lag_weeks: [26, 78]}
+  - {from: litho_equipment, to: dram_die,      lag_weeks: [26, 78]}
+  - {from: logic_wafer,     to: cowos,         lag_weeks: [2, 6]}
+  - {from: dram_die,        to: hbm_stack,     lag_weeks: [1, 3]}
+  - {from: dram_die,        to: dram_module,   lag_weeks: [1, 3]}
+  - {from: nand_die,        to: ssd,           lag_weeks: [1, 3]}
+  - {from: nand_die,        to: osat,          lag_weeks: [1, 3]}
+  - {from: hbm_stack,       to: cowos,         lag_weeks: [1, 2]}
+  - {from: abf_substrate,   to: cowos,         lag_weeks: [3, 8]}
+  - {from: abf_substrate,   to: osat,          lag_weeks: [3, 8]}
+  - {from: cowos,           to: gpu_module,    lag_weeks: [1, 3]}
+  - {from: osat,            to: dram_module,   lag_weeks: [1, 2]}
+  - {from: gpu_module,      to: server_board,  lag_weeks: [2, 4]}
+  - {from: dram_module,     to: server_board,  lag_weeks: [1, 2]}
+  - {from: ssd,             to: server_board,  lag_weeks: [1, 2]}
+  - {from: gpu_module,      to: retail_supply, lag_weeks: [3, 6]}
+  - {from: dram_module,     to: retail_supply, lag_weeks: [2, 5]}
+  - {from: ssd,             to: retail_supply, lag_weeks: [2, 5]}
+  - {from: server_board,    to: retail_supply, lag_weeks: [2, 4]}

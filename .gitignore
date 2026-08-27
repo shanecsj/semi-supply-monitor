@@ -1,0 +1,7 @@
+data/
+*.db
+digest*.md
+__pycache__/
+*.pyc
+.pypath
+.pytest_cache/

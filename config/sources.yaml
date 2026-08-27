@@ -1,0 +1,30 @@
+# Narrative sources.
+#
+# GDELT is the broad net (free, global, 15-min cadence, full archive back to
+# 2015). RSS covers the trade press that breaks semiconductor news GDELT ranks
+# low or picks up late.
+#
+# NOTE ON LICENSING: for paywalled trade press we store headline, URL and
+# timestamp only - never full article text. See README.
+
+gdelt:
+  # `sourcelang:eng` is required in practice; without it the API returns empty
+  # result sets for otherwise valid queries.
+  timespan: 7d
+  maxrecords: 100
+  # Three consolidated queries, not six. Each costs a minimum 6s throttle wait,
+  # and GDELT starts refusing connections when pushed harder than that.
+  queries:
+    - name: ram
+      query: '("DRAM" OR "NAND flash" OR "HBM" OR "memory chip" OR "SK Hynix" OR "Kioxia") sourcelang:eng'
+    - name: gpu
+      query: '("CoWoS" OR "advanced packaging" OR "GPU supply" OR "AI accelerator" OR "TSMC") sourcelang:eng'
+    - name: logistics
+      query: '("export controls" OR "entity list" OR "port strike" OR "air cargo" OR "Taiwan Strait") (chip OR semiconductor OR memory OR electronics) sourcelang:eng'
+
+rss:
+  - {name: digitimes,     url: "https://www.digitimes.com/rss/daily.xml",  paywalled: true}
+  - {name: eetimes,       url: "https://www.eetimes.com/feed/",            paywalled: false}
+  - {name: tomshardware,  url: "https://www.tomshardware.com/feeds.xml",   paywalled: false}
+  - {name: anandtech,     url: "https://www.servethehome.com/feed/",       paywalled: false}
+  - {name: reuters_tech,  url: "https://www.theregister.com/headlines.atom", paywalled: false}
