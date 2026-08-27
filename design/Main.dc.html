@@ -1,0 +1,427 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #d98324; } a:hover { color: #f0a04b; }
+  </style>
+</helmet>
+
+<div style="width: 1440px; box-sizing: border-box; background: #14161a; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #e8e4dc; display: flex; flex-direction: column">
+
+  <!-- ================= nav ================= -->
+  <div style="display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 18px 100px; border-bottom: 1px solid #262b31">
+    <div style="display: flex; align-items: center; gap: 12px">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round">
+        <g stroke="#e8e4dc" stroke-width="1.75"><path d="M2.5 5.5L10.5 11.2"/><path d="M2.5 12H10.5"/><path d="M2.5 18.5L10.5 12.8"/><path d="M13.5 12H21.5"/></g>
+        <path d="M12 7V17" stroke="#d98324" stroke-width="2.4"/>
+      </svg>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 17px; font-weight: 700; letter-spacing: 0.1em; color: #e8e4dc">CHOKEPOINT</div>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.16em; color: #6d7681; border-left: 1px solid #333941; padding-left: 12px">S.S.DEE</div>
+    </div>
+    <div style="display: flex; gap: 30px; align-items: center">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em; color: #9aa3ad">How it works</div>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em; color: #9aa3ad">Sources</div>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em; color: #9aa3ad">Method</div>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em; color: #9aa3ad">Team</div>
+      <div style="padding: 9px 16px; border: 1px solid #d98324; color: #d98324; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.08em">READ THE DIGEST</div>
+    </div>
+  </div>
+
+  <!-- ================= live strip ================= -->
+  <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; background: #262b31; border-bottom: 1px solid #262b31">
+    <div style="background: #1a1e23; padding: 14px 24px; display: flex; flex-direction: column; gap: 6px">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #6d7681">SEVERITY 4+ OPEN</div>
+      <div style="display: flex; align-items: baseline; gap: 8px"><div style="font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 700; color: #d98324">2</div><div style="width: 6px; height: 6px; border-radius: 50%; background: #d98324"></div></div>
+    </div>
+    <div style="background: #1a1e23; padding: 14px 24px; display: flex; flex-direction: column; gap: 6px">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #6d7681">DOCUMENTS / 7D</div>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 700; color: #e8e4dc">265</div>
+    </div>
+    <div style="background: #1a1e23; padding: 14px 24px; display: flex; flex-direction: column; gap: 6px">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #6d7681">SURFACED</div>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 700; color: #7fb3a3">14</div>
+    </div>
+    <div style="background: #1a1e23; padding: 14px 24px; display: flex; flex-direction: column; gap: 6px">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #6d7681">NODES TRACKED</div>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 700; color: #e8e4dc">75</div>
+    </div>
+    <div style="background: #1a1e23; padding: 14px 24px; display: flex; flex-direction: column; gap: 6px">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #6d7681">LAST POLL</div>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 700; color: #e8e4dc">18m ago</div>
+    </div>
+  </div>
+
+  <!-- ================= hero ================= -->
+  <div style="padding: 74px 100px 66px; display: grid; grid-template-columns: minmax(0, 1fr) 470px; gap: 60px; align-items: start; border-bottom: 1px solid #262b31">
+    <div style="display: flex; flex-direction: column; gap: 22px">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.18em; color: #d98324">RAM &amp; GPU SUPPLY CHAIN · ATTENTION FILTER</div>
+      <div style="font-size: 62px; line-height: 1.08; font-weight: 600; letter-spacing: -0.02em; color: #e8e4dc; max-width: 720px; text-wrap: pretty">Know what happened to memory and accelerator supply — without reading 500 articles a day.</div>
+      <div style="font-size: 18px; line-height: 1.6; color: #9aa3ad; max-width: 560px">Chokepoint polls earthquake bulletins, SEC filings, export-control notices and the semiconductor trade press, filters them against a 75-node supply graph, then has a model classify what survives and draft the alert.</div>
+      <div style="display: flex; gap: 12px; padding-top: 10px">
+        <div style="padding: 14px 24px; background: #d98324; color: #14161a; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 0.07em">READ THIS WEEK&#39;S DIGEST</div>
+        <div style="padding: 14px 24px; border: 1px solid #46505a; color: #9aa3ad; font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.07em">HOW IT WORKS</div>
+      </div>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.06em; color: #46505a; padding-top: 6px">Free public data only. No paywalled bodies stored. No MNPI exposure.</div>
+    </div>
+
+    <!-- live entry preview -->
+    <div style="border: 1px solid #333941; background: #1a1e23; display: flex; flex-direction: column">
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 11px 16px; border-bottom: 1px solid #262b31">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #6d7681">LATEST ALERT</div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.1em; color: #6d7681">2026-08-26 04:12Z</div>
+      </div>
+      <div style="border-left: 3px solid #d98324; padding: 18px 18px 20px; display: flex; flex-direction: column; gap: 13px">
+        <div style="display: flex; gap: 7px; flex-wrap: wrap">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 9.5px; padding: 3px 7px; background: #d98324; color: #14161a; font-weight: 700">SEV 4/5</div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 9.5px; padding: 3px 7px; border: 1px solid #7fb3a3; color: #7fb3a3">CONFIRMED</div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 9.5px; padding: 3px 7px; border: 1px solid #46505a; color: #9aa3ad">FAB INCIDENT</div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 9.5px; padding: 3px 7px; border: 1px solid #46505a; color: #9aa3ad">BOTH</div>
+        </div>
+        <div style="font-size: 19px; line-height: 1.35; font-weight: 500; color: #e8e4dc">Shin-Etsu halts one photoresist line at Naoetsu after chemical leak</div>
+        <div style="font-size: 14px; line-height: 1.6; color: #9aa3ad">Restart guidance is two to four weeks. Naoetsu is one of a small number of qualified sources for leading-edge photoresist, a stage the registry scores at 0.80 concentration.</div>
+        <div style="border-top: 1px dashed #333941; padding-top: 12px; display: flex; flex-direction: column; gap: 6px">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #6d7681">PROPAGATION</div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.7; color: #7fb3a3">shinetsu_naoetsu → photoresist → logic_wafer <span style="color: #6d7681">3-8wk</span> → cowos <span style="color: #6d7681">5-14wk</span> → gpu_module <span style="color: #6d7681">6-17wk</span></div>
+        </div>
+        <div style="border-left: 2px solid #46505a; padding-left: 12px; font-size: 13px; line-height: 1.55; color: #6d7681; font-style: italic">&ldquo;Production at one line at the Naoetsu plant has been suspended.&rdquo;</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 01 problem ================= -->
+  <div style="display: grid; grid-template-columns: 130px minmax(0, 1fr); border-bottom: 1px solid #262b31">
+    <div style="padding: 54px 0 0 100px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #46505a">01</div>
+    <div style="padding: 50px 100px 54px 0; display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 60px; align-items: center">
+      <div style="display: flex; flex-direction: column; gap: 16px">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.16em; color: #6d7681">PROBLEM</div>
+        <div style="font-size: 32px; line-height: 1.25; font-weight: 500; color: #e8e4dc; max-width: 620px; text-wrap: pretty">Disruption news for RAM and GPU supply arrives fragmented, and mostly irrelevant.</div>
+        <div style="font-size: 16px; line-height: 1.65; color: #9aa3ad; max-width: 580px">A quake bulletin from USGS, an 8-K from EDGAR, a Federal Register export-control notice, and eight trade outlets each break a different piece of the same week. Almost none of it moves the chain. The few items that do are indistinguishable from the rest until somebody who knows the graph reads them — and that person does not have two hours a day.</div>
+      </div>
+      <div style="border: 1px solid #333941; background: #1a1e23; padding: 22px 24px; display: flex; flex-direction: column; gap: 14px">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #6d7681">ONE WEEK, ONE ANALYST</div>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <div style="display: flex; align-items: center; gap: 12px"><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #6d7681; width: 108px">GDELT</div><div style="height: 9px; background: #46505a; width: 100%"></div><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #9aa3ad; width: 34px; text-align: right; margin-left: auto">163</div></div>
+          <div style="display: flex; align-items: center; gap: 12px"><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #6d7681; width: 108px">Trade RSS</div><div style="height: 9px; background: #46505a; width: 42%"></div><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #9aa3ad; width: 34px; text-align: right; margin-left: auto">68</div></div>
+          <div style="display: flex; align-items: center; gap: 12px"><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #6d7681; width: 108px">SEC EDGAR</div><div style="height: 9px; background: #46505a; width: 13%"></div><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #9aa3ad; width: 34px; text-align: right; margin-left: auto">21</div></div>
+          <div style="display: flex; align-items: center; gap: 12px"><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #6d7681; width: 108px">Fed. Register</div><div style="height: 9px; background: #46505a; width: 5%"></div><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #9aa3ad; width: 34px; text-align: right; margin-left: auto">9</div></div>
+          <div style="display: flex; align-items: center; gap: 12px"><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #6d7681; width: 108px">USGS</div><div style="height: 9px; background: #46505a; width: 2.5%"></div><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #9aa3ad; width: 34px; text-align: right; margin-left: auto">4</div></div>
+        </div>
+        <div style="border-top: 1px dashed #333941; padding-top: 12px; display: flex; justify-content: space-between; align-items: baseline">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #6d7681">TOTAL</div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; color: #e8e4dc">265</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 02 target user ================= -->
+  <div style="display: grid; grid-template-columns: 130px minmax(0, 1fr); border-bottom: 1px solid #262b31">
+    <div style="padding: 54px 0 0 100px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #46505a">02</div>
+    <div style="padding: 50px 100px 54px 0; display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 60px; align-items: start">
+      <div style="display: flex; flex-direction: column; gap: 16px">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.16em; color: #6d7681">TARGET USER</div>
+        <div style="font-size: 32px; line-height: 1.25; font-weight: 500; color: #e8e4dc; max-width: 620px; text-wrap: pretty">Capacity and procurement planners at server OEMs and data-centre buyers.</div>
+        <div style="font-size: 16px; line-height: 1.65; color: #9aa3ad; max-width: 580px">People who must hold a current mental model of DRAM, HBM and CoWoS supply because their build plan depends on it — and who today assemble that model by hand, from trade press, over coffee, inconsistently.</div>
+        <div style="display: flex; gap: 10px; align-items: flex-start; border: 1px dashed #d98324; padding: 12px 14px; max-width: 580px; margin-top: 6px">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d98324" stroke-width="1.8" style="flex-shrink: 0; margin-top: 2px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.2v.1"/></svg>
+          <div style="font-size: 13px; line-height: 1.55; color: #d98324">Unvalidated. We have not yet run a single planner interview — see the riskiest assumption below.</div>
+        </div>
+      </div>
+      <div style="border: 1px solid #333941; background: #1a1e23; padding: 22px 24px; display: flex; flex-direction: column; gap: 16px">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #6d7681">EXPLICITLY NOT FOR</div>
+        <div style="display: flex; flex-direction: column; gap: 11px">
+          <div style="display: flex; gap: 10px; align-items: flex-start"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6d7681" stroke-width="2" style="flex-shrink: 0; margin-top: 2px"><path d="M6 6l12 12M18 6L6 18"/></svg><div style="font-size: 13.5px; line-height: 1.5; color: #9aa3ad">Traders looking for an edge. The market reprices these events inside one session.</div></div>
+          <div style="display: flex; gap: 10px; align-items: flex-start"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6d7681" stroke-width="2" style="flex-shrink: 0; margin-top: 2px"><path d="M6 6l12 12M18 6L6 18"/></svg><div style="font-size: 13.5px; line-height: 1.5; color: #9aa3ad">Anyone needing shipment-level telemetry. RAM and GPUs move by air; free air-freight telemetry does not exist.</div></div>
+          <div style="display: flex; gap: 10px; align-items: flex-start"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6d7681" stroke-width="2" style="flex-shrink: 0; margin-top: 2px"><path d="M6 6l12 12M18 6L6 18"/></svg><div style="font-size: 13.5px; line-height: 1.5; color: #9aa3ad">Consumers tracking GPU retail prices. We stop at the channel, not the shelf.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 03 outcome metric ================= -->
+  <div style="display: grid; grid-template-columns: 130px minmax(0, 1fr); border-bottom: 1px solid #262b31; background: #12141a">
+    <div style="padding: 54px 0 0 100px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #46505a">03</div>
+    <div style="padding: 50px 100px 56px 0; display: flex; flex-direction: column; gap: 28px">
+      <div style="display: flex; flex-direction: column; gap: 16px">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.16em; color: #6d7681">OUTCOME METRIC</div>
+        <div style="display: flex; align-items: baseline; gap: 28px; flex-wrap: wrap">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 64px; font-weight: 700; letter-spacing: -0.02em; color: #7fb3a3">265 → 14</div>
+          <div style="font-size: 18px; line-height: 1.5; color: #9aa3ad; max-width: 520px">documents a reader has to get through per weekly run — under a hard constraint that nothing severity-4 or above may be dropped.</div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px">
+        <div style="border: 1px solid #333941; background: #1a1e23; padding: 20px 22px; display: flex; flex-direction: column; gap: 9px">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #6d7681">STAGE 1 · REGISTRY PREFILTER</div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 30px; font-weight: 700; color: #e8e4dc">~92%</div>
+          <div style="font-size: 13.5px; line-height: 1.5; color: #9aa3ad">dropped before a model is ever called. A document mentioning no supply-chain entity — or one with no supply language around it — never reaches the API.</div>
+        </div>
+        <div style="border: 1px solid #333941; background: #1a1e23; padding: 20px 22px; display: flex; flex-direction: column; gap: 9px">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #6d7681">STAGE 2 · CLUSTER + CLASSIFY</div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 30px; font-weight: 700; color: #e8e4dc">14</div>
+          <div style="font-size: 13.5px; line-height: 1.5; color: #9aa3ad">stories, not articles. A 48-hour TF-IDF window with a shared-entity gate collapses the same event reported five ways into one entry.</div>
+        </div>
+        <div style="border: 1px solid #d98324; background: #1c1a16; padding: 20px 22px; display: flex; flex-direction: column; gap: 9px">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #d98324">THE CONSTRAINT · RECALL</div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 30px; font-weight: 700; color: #d98324">not yet measured</div>
+          <div style="font-size: 13.5px; line-height: 1.5; color: #9aa3ad">Filtering is only a win if recall holds, and we have not backtested it yet. A severity-4+ event the filter swallowed is a product failure, not a saved minute — so the number above means nothing until this one exists.</div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <div style="display: flex; height: 34px; border: 1px solid #333941">
+          <div style="width: 94.7%; background: #262b31; display: flex; align-items: center; padding-left: 14px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #6d7681">251 dropped</span></div>
+          <div style="width: 5.3%; background: #7fb3a3"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between"><span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #46505a">0</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #7fb3a3">14 surfaced</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 04 riskiest assumption ================= -->
+  <div style="display: grid; grid-template-columns: 130px minmax(0, 1fr); border-bottom: 1px solid #262b31">
+    <div style="padding: 54px 0 0 100px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #d98324">04</div>
+    <div style="padding: 50px 100px 54px 0; display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 60px; align-items: start">
+      <div style="display: flex; flex-direction: column; gap: 18px">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.16em; color: #d98324">RISKIEST ASSUMPTION</div>
+        <div style="font-size: 32px; line-height: 1.3; font-weight: 500; color: #e8e4dc; max-width: 640px; border-left: 3px solid #d98324; padding-left: 24px; text-wrap: pretty">That awareness is worth having <em style="font-style: italic; color: #d98324">after</em> the market has already repriced.</div>
+        <div style="font-size: 16px; line-height: 1.65; color: #9aa3ad; max-width: 580px">Chokepoint claims no speed edge, and it takes no directional view. Both are deliberate — the evidence below is what forced them. But it means the product&#39;s entire value rests on a reader who needs to <em>understand</em> the chain rather than trade it. If the only people who care about supply disruption are the ones who wanted to be first, there is no product here.</div>
+        <div style="font-size: 16px; line-height: 1.65; color: #9aa3ad; max-width: 580px">This is the assumption we are testing next, and it is not testable from a dataset. It needs planner interviews.</div>
+      </div>
+      <div style="border: 1px solid #333941; background: #1a1e23; padding: 22px 24px; display: flex; flex-direction: column; gap: 15px">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #6d7681">HOW WE PLAN TO KILL IT</div>
+        <div style="display: flex; flex-direction: column; gap: 13px">
+          <div style="display: flex; gap: 12px"><div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #46505a; padding-top: 2px">A</div><div style="font-size: 13.5px; line-height: 1.55; color: #9aa3ad">Eight interviews with planners at OEMs and DC buyers. One question decides it: when a fab goes down, what do you actually do in the next week?</div></div>
+          <div style="display: flex; gap: 12px"><div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #46505a; padding-top: 2px">B</div><div style="font-size: 13.5px; line-height: 1.55; color: #9aa3ad">Ship the digest to five of them weekly for a month. Measure opens and forwards, not stars.</div></div>
+          <div style="display: flex; gap: 12px"><div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #46505a; padding-top: 2px">C</div><div style="font-size: 13.5px; line-height: 1.55; color: #9aa3ad">Backtest recall: replay twelve months of known disruptions and count how many the filter would have surfaced.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 05 evidence ================= -->
+  <div style="display: grid; grid-template-columns: 130px minmax(0, 1fr); border-bottom: 1px solid #262b31; background: #12141a">
+    <div style="padding: 54px 0 0 100px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #46505a">05</div>
+    <div style="padding: 50px 100px 56px 0; display: flex; flex-direction: column; gap: 34px">
+
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.16em; color: #6d7681">EVIDENCE</div>
+        <div style="font-size: 32px; line-height: 1.25; font-weight: 500; color: #e8e4dc; max-width: 700px; text-wrap: pretty">We ran the Hualien earthquake as an event study before writing the classifier. It changed the product.</div>
+        <div style="font-size: 16px; line-height: 1.65; color: #9aa3ad; max-width: 620px">2024-04-03, magnitude 7.4, off Taiwan&#39;s east coast — inside the sensor&#39;s 188 km magnitude-scaled radius for the Hsinchu and Taichung fabs. Abnormal return on day one, measured against SOXX:</div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px">
+        <div style="border: 1px solid #333941; background: #1a1e23; padding: 22px 24px; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; justify-content: space-between; align-items: baseline"><div style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #9aa3ad">MU</div><div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.1em; color: #6d7681">MICRON</div></div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 34px; font-weight: 700; color: #7fb3a3">+4.0%</div>
+          <div style="height: 8px; background: #262b31"><div style="width: 100%; height: 100%; background: #7fb3a3"></div></div>
+          <div style="font-size: 13.5px; line-height: 1.5; color: #9aa3ad">Memory supplier. A rival&#39;s capacity is impaired, so scarcity is pricing power.</div>
+        </div>
+        <div style="border: 1px solid #333941; background: #1a1e23; padding: 22px 24px; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; justify-content: space-between; align-items: baseline"><div style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #9aa3ad">TSM</div><div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.1em; color: #6d7681">TSMC</div></div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 34px; font-weight: 700; color: #e8e4dc">+1.0%</div>
+          <div style="height: 8px; background: #262b31"><div style="width: 25%; height: 100%; background: #46505a"></div></div>
+          <div style="font-size: 13.5px; line-height: 1.5; color: #9aa3ad">The disrupted party — and it went <em>up</em>. Fear priced in at the open, relief by the close.</div>
+        </div>
+        <div style="border: 1px solid #333941; background: #1a1e23; padding: 22px 24px; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; justify-content: space-between; align-items: baseline"><div style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #9aa3ad">NVDA</div><div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.1em; color: #6d7681">NVIDIA</div></div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 34px; font-weight: 700; color: #d98324">−0.8%</div>
+          <div style="height: 8px; background: #262b31"><div style="width: 20%; height: 100%; background: #d98324"></div></div>
+          <div style="font-size: 13.5px; line-height: 1.5; color: #9aa3ad">Consumer of TSMC and HBM capacity. Fell to −4% by day two.</div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px">
+        <div style="border-left: 3px solid #7fb3a3; background: #181c21; padding: 20px 24px; display: flex; flex-direction: column; gap: 9px">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #7fb3a3">LESSON 1 — NO SPEED EDGE</div>
+          <div style="font-size: 15px; line-height: 1.6; color: #9aa3ad">The whole repricing happened inside one session. On free daily data there is nothing left to be early to, so we stopped trying and built for comprehension instead.</div>
+        </div>
+        <div style="border-left: 3px solid #d98324; background: #1c1a16; padding: 20px 24px; display: flex; flex-direction: column; gap: 9px">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #d98324">LESSON 2 — THE SIGN IS BACKWARDS</div>
+          <div style="font-size: 15px; line-height: 1.6; color: #9aa3ad">A disruption is bullish for the disrupted chain&#39;s sellers. A monitor that scored risk as a magnitude and implied a direction would have been confidently, expensively wrong.</div>
+        </div>
+      </div>
+
+      <div style="border: 1px solid #333941; background: #1a1e23; padding: 24px 26px; display: flex; flex-direction: column; gap: 16px">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #6d7681">SUPPORTING EVIDENCE</div>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 26px">
+          <div style="display: flex; flex-direction: column; gap: 7px">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; color: #e8e4dc">265 → 14</div>
+            <div style="font-size: 13.5px; line-height: 1.5; color: #9aa3ad">Measured on a live run, not a synthetic set. The prefilter holds up outside the lab.</div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 7px">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; color: #e8e4dc">75 / 24</div>
+            <div style="font-size: 13.5px; line-height: 1.5; color: #9aa3ad">Nodes and dependency edges, each edge carrying a lag range. The propagation sentence is graph traversal — no model involved, so it cannot hallucinate a path.</div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 7px">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; color: #e8e4dc">0.35</div>
+            <div style="font-size: 13.5px; line-height: 1.5; color: #9aa3ad">The confidence the offline heuristic reports about itself. Running without a key degrades loudly rather than quietly.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= how it works ================= -->
+  <div style="padding: 58px 100px 60px; border-bottom: 1px solid #262b31; display: flex; flex-direction: column; gap: 30px">
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.16em; color: #6d7681">HOW IT WORKS</div>
+      <div style="font-size: 30px; line-height: 1.25; font-weight: 500; color: #e8e4dc; max-width: 640px">Five stages. The model is used in exactly one of them.</div>
+    </div>
+
+    <div style="border: 1px solid #333941; background: #1a1e23; padding: 30px 32px">
+      <svg viewBox="0 0 1180 190" width="100%" height="190" fill="none" font-family="JetBrains Mono, monospace">
+        <g stroke="#46505a" stroke-width="1.2">
+          <rect x="1" y="12" width="150" height="30" fill="#1e2228"/>
+          <rect x="1" y="52" width="150" height="30" fill="#1e2228"/>
+          <rect x="1" y="92" width="150" height="30" fill="#1e2228"/>
+          <rect x="1" y="132" width="150" height="30" fill="#1e2228"/>
+        </g>
+        <g fill="#9aa3ad" font-size="10.5">
+          <text x="14" y="31">USGS · quakes</text>
+          <text x="14" y="71">EDGAR · 8-K/6-K</text>
+          <text x="14" y="111">Fed. Register</text>
+          <text x="14" y="151">GDELT · trade RSS</text>
+        </g>
+        <g stroke="#333941" stroke-width="1.2">
+          <path d="M151 27h40v50h20M151 67h60M151 107h40v-30h20M151 147h40v-70h20"/>
+        </g>
+        <g stroke="#46505a" stroke-width="1.2"><rect x="211" y="62" width="140" height="30" fill="#1e2228"/></g>
+        <text x="224" y="81" fill="#9aa3ad" font-size="10.5">raw_documents</text>
+        <text x="224" y="105" fill="#46505a" font-size="9">append-only, hashed</text>
+        <g stroke="#333941" stroke-width="1.2"><path d="M351 77h44"/><path d="M395 73l8 4-8 4z" fill="#333941"/></g>
+
+        <g stroke="#7fb3a3" stroke-width="1.4"><rect x="405" y="62" width="160" height="30" fill="#181f1d"/></g>
+        <text x="418" y="81" fill="#7fb3a3" font-size="10.5">registry prefilter</text>
+        <text x="418" y="105" fill="#7fb3a3" font-size="9">drops ~92% · no model</text>
+        <g stroke="#333941" stroke-width="1.2"><path d="M565 77h44"/><path d="M609 73l8 4-8 4z" fill="#333941"/></g>
+
+        <g stroke="#46505a" stroke-width="1.2"><rect x="619" y="62" width="150" height="30" fill="#1e2228"/></g>
+        <text x="632" y="81" fill="#9aa3ad" font-size="10.5">TF-IDF clustering</text>
+        <text x="632" y="105" fill="#46505a" font-size="9">48h window, entity gate</text>
+        <g stroke="#333941" stroke-width="1.2"><path d="M769 77h44"/><path d="M813 73l8 4-8 4z" fill="#333941"/></g>
+
+        <g stroke="#d98324" stroke-width="1.4"><rect x="823" y="62" width="170" height="30" fill="#231d15"/></g>
+        <text x="836" y="81" fill="#d98324" font-size="10.5">classify + draft</text>
+        <text x="836" y="105" fill="#d98324" font-size="9">structured output · the model</text>
+        <g stroke="#333941" stroke-width="1.2"><path d="M993 77h44"/><path d="M1037 73l8 4-8 4z" fill="#333941"/></g>
+
+        <g stroke="#46505a" stroke-width="1.2"><rect x="1047" y="62" width="130" height="30" fill="#1e2228"/></g>
+        <text x="1060" y="81" fill="#9aa3ad" font-size="10.5">digest / alert</text>
+
+        <g stroke="#46505a" stroke-width="1" stroke-dasharray="3 3"><path d="M908 42V20h-60"/></g>
+        <text x="838" y="24" fill="#46505a" font-size="9" text-anchor="end">entity graph supplies the propagation path — deterministic, not generated</text>
+        <g stroke="#46505a" stroke-width="1" stroke-dasharray="3 3"><path d="M908 92v48h-8"/></g>
+        <text x="890" y="143" fill="#46505a" font-size="9" text-anchor="end">market annotation: abnormal return vs SOXX, attached but never interpreted</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ================= sources ================= -->
+  <div style="padding: 58px 100px 60px; border-bottom: 1px solid #262b31; display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 60px; align-items: start">
+    <div style="display: flex; flex-direction: column; gap: 14px">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.16em; color: #6d7681">SOURCES</div>
+      <div style="font-size: 30px; line-height: 1.25; font-weight: 500; color: #e8e4dc">Every feed is free, and every one is legally clean.</div>
+      <div style="font-size: 15px; line-height: 1.6; color: #9aa3ad">Paywalled trade press is stored as headline, URL and timestamp only — the fetcher refuses bodies even when the feed volunteers them. Public data only means no MNPI exposure.</div>
+    </div>
+    <div style="display: flex; flex-direction: column; border-top: 1px solid #333941">
+      <div style="display: grid; grid-template-columns: 190px minmax(0, 1fr) 200px; gap: 20px; padding: 14px 0; border-bottom: 1px solid #262b31; align-items: baseline">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #e8e4dc">USGS</div>
+        <div style="font-size: 14px; color: #9aa3ad">Earthquakes near tracked fabs</div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #6d7681">magnitude-scaled radius</div>
+      </div>
+      <div style="display: grid; grid-template-columns: 190px minmax(0, 1fr) 200px; gap: 20px; padding: 14px 0; border-bottom: 1px solid #262b31; align-items: baseline">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #e8e4dc">SEC EDGAR</div>
+        <div style="font-size: 14px; color: #9aa3ad">8-K and 6-K material events</div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #6d7681">real User-Agent required</div>
+      </div>
+      <div style="display: grid; grid-template-columns: 190px minmax(0, 1fr) 200px; gap: 20px; padding: 14px 0; border-bottom: 1px solid #262b31; align-items: baseline">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #e8e4dc">Federal Register</div>
+        <div style="font-size: 14px; color: #9aa3ad">Export controls, Entity List additions</div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #6d7681">scoped to BIS / OFAC / USTR</div>
+      </div>
+      <div style="display: grid; grid-template-columns: 190px minmax(0, 1fr) 200px; gap: 20px; padding: 14px 0; border-bottom: 1px solid #262b31; align-items: baseline">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #e8e4dc">GDELT 2.0</div>
+        <div style="font-size: 14px; color: #9aa3ad">Global news, 15-minute cadence</div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #d98324">rate-limited; degrades to RSS</div>
+      </div>
+      <div style="display: grid; grid-template-columns: 190px minmax(0, 1fr) 200px; gap: 20px; padding: 14px 0; border-bottom: 1px solid #262b31; align-items: baseline">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #e8e4dc">Trade RSS</div>
+        <div style="font-size: 14px; color: #9aa3ad">DigiTimes, EE Times, Tom&#39;s Hardware, The Register</div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #6d7681">carries the narrative load</div>
+      </div>
+      <div style="display: grid; grid-template-columns: 190px minmax(0, 1fr) 200px; gap: 20px; padding: 14px 0; border-bottom: 1px solid #262b31; align-items: baseline">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #e8e4dc">Yahoo Finance</div>
+        <div style="font-size: 14px; color: #9aa3ad">Daily bars, for annotation only</div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #6d7681">behind a swappable interface</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= what it is not ================= -->
+  <div style="padding: 58px 100px 60px; border-bottom: 1px solid #262b31; background: #12141a; display: flex; flex-direction: column; gap: 26px">
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.16em; color: #6d7681">WHAT THIS IS NOT</div>
+      <div style="font-size: 30px; line-height: 1.25; font-weight: 500; color: #e8e4dc; max-width: 760px">It is not a trading signal generator, and that is a design decision rather than a missing feature.</div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px">
+      <div style="border: 1px solid #262b31; padding: 20px 22px; display: flex; flex-direction: column; gap: 9px">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #6d7681">NO DIRECTION</div>
+        <div style="font-size: 14.5px; line-height: 1.6; color: #9aa3ad">We report what happened and how it propagates. The market annotation is attached and left uninterpreted, because the Hualien study showed the naive interpretation is inverted.</div>
+      </div>
+      <div style="border: 1px solid #262b31; padding: 20px 22px; display: flex; flex-direction: column; gap: 9px">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #6d7681">NO TELEMETRY THEATRE</div>
+        <div style="font-size: 14.5px; line-height: 1.6; color: #9aa3ad">Shipping is tracked as news and chokepoint events. RAM and GPUs fly; free air-freight telemetry does not exist, and free ocean data covers the least relevant leg.</div>
+      </div>
+      <div style="border: 1px solid #262b31; padding: 20px 22px; display: flex; flex-direction: column; gap: 9px">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #6d7681">NO QUIET DEGRADING</div>
+        <div style="font-size: 14.5px; line-height: 1.6; color: #9aa3ad">Without an API key the pipeline still runs on a deterministic heuristic — and says so, at confidence 0.35, on every entry it produces.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= team + CTA ================= -->
+  <div style="padding: 62px 100px 66px; display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 60px; align-items: center">
+    <div style="display: flex; flex-direction: column; gap: 18px">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.16em; color: #6d7681">TEAM S.S.DEE</div>
+      <div style="font-size: 38px; line-height: 1.2; font-weight: 600; letter-spacing: -0.015em; color: #e8e4dc; max-width: 640px; text-wrap: pretty">Read one digest. If it tells you something you did not know, we were right about the user.</div>
+      <div style="display: flex; gap: 12px; padding-top: 8px">
+        <div style="padding: 14px 26px; background: #d98324; color: #14161a; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 0.07em">READ THIS WEEK&#39;S DIGEST</div>
+        <div style="padding: 14px 26px; border: 1px solid #46505a; color: #9aa3ad; font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.07em">SOURCE ON GITHUB</div>
+      </div>
+    </div>
+    <div style="border: 1px solid #333941; background: #1a1e23; padding: 22px 24px; display: flex; flex-direction: column; gap: 12px">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #6d7681">WEEKLY DIGEST · NO ACCOUNT</div>
+      <div style="display: flex; gap: 8px">
+        <div style="flex-grow: 1; border: 1px solid #46505a; background: #14161a; padding: 11px 13px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #46505a">you@company.com</div>
+        <div style="padding: 11px 18px; background: #e8e4dc; color: #14161a; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em">SUBSCRIBE</div>
+      </div>
+      <div style="font-size: 12px; line-height: 1.5; color: #6d7681">Planned: one email on Mondays, with severity-4+ events interrupting. Today the digest is generated on demand — <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #9aa3ad">semimon.cli run</span>.</div>
+    </div>
+  </div>
+
+  <!-- ================= footer ================= -->
+  <div style="padding: 22px 100px 26px; border-top: 1px solid #262b31; display: flex; justify-content: space-between; align-items: center; gap: 24px; background: #12141a">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-linecap="round">
+        <g stroke="#46505a" stroke-width="2"><path d="M2.5 5.5L10.5 11.2"/><path d="M2.5 12H10.5"/><path d="M2.5 18.5L10.5 12.8"/><path d="M13.5 12H21.5"/></g>
+        <path d="M12 7V17" stroke="#6d7681" stroke-width="2.6"/>
+      </svg>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.1em; color: #46505a">CHOKEPOINT · TEAM S.S.DEE · 2026</div>
+    </div>
+    <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.06em; color: #46505a">Awareness tool. Not investment advice, and no directional view is implied by anything above.</div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

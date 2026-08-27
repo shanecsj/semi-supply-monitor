@@ -67,7 +67,7 @@ def _next_twse_revenue_date(today: Optional[datetime] = None) -> str:
     return target.strftime("%Y-%m-%d")
 
 
-def _graph_state(registry: Registry, top: int = 6) -> list[tuple[str, float]]:
+def graph_state(registry: Registry, top: int = 6) -> list[tuple[str, float]]:
     """Tightest chokepoints, so the reader keeps a mental model of where the
     chain actually binds."""
     scored = [(registry[n].name, registry[n].concentration)
@@ -76,10 +76,20 @@ def _graph_state(registry: Registry, top: int = 6) -> list[tuple[str, float]]:
     return sorted(scored, key=lambda pair: pair[1], reverse=True)[:top]
 
 
-def build(registry: Registry, db_path: Path | str = store.DEFAULT_DB,
-          days: int = 7, offline: bool = False,
-          skip_market: bool = False) -> str:
-    """Cluster, classify, annotate and render. Returns markdown."""
+# kept for backward compatibility with callers that imported the private name
+_graph_state = graph_state
+
+
+def classify_period(registry: Registry, db_path: Path | str = store.DEFAULT_DB,
+                     days: int = 7, offline: bool = False,
+                     skip_market: bool = False) -> list[dict]:
+    """Cluster and classify every document fetched in the last `days`.
+
+    Returns the entry dicts `render()` and the JSON API both build on, sorted
+    by severity then confidence. Pulled out of `build()` so the web API can
+    reuse the exact same pipeline the markdown digest runs, rather than a
+    second, drifting implementation.
+    """
     cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat(
         timespec="seconds")
     classifier = get_classifier(registry, force_offline=offline)
@@ -113,14 +123,17 @@ def build(registry: Registry, db_path: Path | str = store.DEFAULT_DB,
             if result is None or not result.relevant:
                 continue
 
+            propagation_entity = ""
             propagation = ""
             for node_id in (result.entities or candidates):
                 if node_id in registry.nodes:
                     propagation = registry.explain(node_id)
                     if propagation:
+                        propagation_entity = node_id
                         break
 
             market_note = ""
+            when = None
             if market is not None:
                 # Feed dates arrive as ISO, RFC-822 ("Thu, 27 Aug 2026 ...") and
                 # bare YYYY-MM-DD, so normalise rather than slicing the string.
@@ -129,6 +142,8 @@ def build(registry: Registry, db_path: Path | str = store.DEFAULT_DB,
                 tickers = registry.tickers(result.entities or candidates)
                 if when and tickers:
                     market_note = market.annotate(tickers, when.strftime("%Y-%m-%d"))
+            when = when or (clustering._parsed_time(members[0].get("published_at"))
+                            or clustering._parsed_time(members[0].get("fetched_at")))
 
             body = classifier.draft(text, result, propagation, market_note,
                                     clustering.originating_sources(docs, indices))
@@ -136,7 +151,9 @@ def build(registry: Registry, db_path: Path | str = store.DEFAULT_DB,
                 "label": clustering.cluster_label(docs, indices),
                 "classification": result,
                 "propagation": propagation,
+                "propagation_entity": propagation_entity,
                 "market": market_note,
+                "when": when,
                 "body": body,
                 "sources": clustering.originating_sources(docs, indices),
                 "urls": [m.get("url") for m in members if m.get("url")][:4],
@@ -147,7 +164,17 @@ def build(registry: Registry, db_path: Path | str = store.DEFAULT_DB,
             key=lambda e: (e["classification"].severity,
                            e["classification"].confidence),
             reverse=True)
-        markdown = render(registry, entries, days)
+        return entries
+
+
+def build(registry: Registry, db_path: Path | str = store.DEFAULT_DB,
+          days: int = 7, offline: bool = False,
+          skip_market: bool = False) -> str:
+    """Cluster, classify, annotate and render. Returns markdown."""
+    entries = classify_period(registry, db_path, days=days, offline=offline,
+                              skip_market=skip_market)
+    markdown = render(registry, entries, days)
+    with store.connect(db_path) as conn:
         conn.execute(
             "INSERT INTO alerts (headline, body, created_at, kind) VALUES (?,?,?,?)",
             (f"Digest {datetime.now(timezone.utc):%Y-%m-%d}", markdown,
@@ -183,7 +210,7 @@ def render(registry: Registry, entries: Sequence[dict], days: int) -> str:
 
     lines += ["## Graph state", "",
               "Tightest chokepoints in the tracked chain:", ""]
-    for name, concentration in _graph_state(registry):
+    for name, concentration in graph_state(registry):
         bar = "#" * int(round(concentration * 20))
         lines.append(f"- `{concentration:.2f}` {bar:<20} {name}")
     lines += [

@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CHOKEPOINT — RAM &amp; GPU supply-chain attention filter</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #14161a;
+    --bg-alt: #12141a;
+    --bg-card: #1a1e23;
+    --bg-card-2: #1e2228;
+    --border: #262b31;
+    --border-mid: #333941;
+    --border-hi: #46505a;
+    --text: #e8e4dc;
+    --text-dim: #9aa3ad;
+    --text-faint: #6d7681;
+    --text-ghost: #46505a;
+    --accent: #d98324;
+    --accent-hover: #f0a04b;
+    --accent-bg: #231d15;
+    --good: #7fb3a3;
+    --good-bg: #181f1d;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'IBM Plex Sans', system-ui, sans-serif;
+    --pad: clamp(20px, 6vw, 100px);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { color: var(--accent-hover); }
+  em { font-style: italic; }
+  .page { display: flex; flex-direction: column; max-width: 1440px; margin: 0 auto; }
+  .mono { font-family: var(--mono); }
+  .eyebrow { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.16em; color: var(--text-faint); }
+  .eyebrow.accent { color: var(--accent); }
+  .h2 { font-size: clamp(24px, 3vw, 32px); line-height: 1.25; font-weight: 500; color: var(--text); }
+  .body-text { font-size: 16px; line-height: 1.65; color: var(--text-dim); }
+  .card { border: 1px solid var(--border-mid); background: var(--bg-card); padding: 20px 22px; }
+  .btn { font-family: var(--mono); font-size: 12px; letter-spacing: 0.07em; padding: 14px 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid transparent; }
+  .btn-primary { background: var(--accent); color: var(--bg); font-weight: 700; }
+  .btn-primary:hover { background: var(--accent-hover); color: var(--bg); }
+  .btn-ghost { border-color: var(--border-hi); color: var(--text-dim); background: transparent; }
+  .btn-ghost:hover { color: var(--text); border-color: var(--text-dim); }
+
+  /* ---------------- nav ---------------- */
+  .nav {
+    display: flex; justify-content: space-between; align-items: center; gap: 24px;
+    padding: 18px var(--pad); border-bottom: 1px solid var(--border); flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .wordmark { font-family: var(--mono); font-size: 17px; font-weight: 700; letter-spacing: 0.1em; }
+  .team-tag { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.16em; color: var(--text-faint); border-left: 1px solid var(--border-mid); padding-left: 12px; }
+  .nav-links { display: flex; gap: 30px; align-items: center; flex-wrap: wrap; }
+  .nav-links a:not(.btn) { font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; color: var(--text-dim); }
+  .nav-links a:not(.btn):hover { color: var(--text); }
+  .btn-outline-accent { border: 1px solid var(--accent); color: var(--accent); font-weight: 500; padding: 9px 16px; }
+  .btn-outline-accent:hover { background: var(--accent); color: var(--bg); }
+
+  /* ---------------- live strip ---------------- */
+  .strip {
+    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px;
+    background: var(--border); border-bottom: 1px solid var(--border);
+  }
+  .stat { background: var(--bg-card); padding: 14px var(--pad-cell, 24px); display: flex; flex-direction: column; gap: 6px; }
+  .stat-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em; color: var(--text-faint); }
+  .stat-val { font-family: var(--mono); font-size: clamp(18px, 2.4vw, 26px); font-weight: 700; color: var(--text); display: flex; align-items: baseline; gap: 8px; }
+  .stat-val.accent { color: var(--accent); }
+  .stat-val.good { color: var(--good); }
+  .stat-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  @media (max-width: 900px) { .strip { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+
+  /* ---------------- hero ---------------- */
+  .hero {
+    padding: clamp(40px, 8vw, 74px) var(--pad) clamp(36px, 6vw, 66px);
+    display: grid; grid-template-columns: minmax(0, 1fr) 470px; gap: 60px; align-items: start;
+    border-bottom: 1px solid var(--border);
+  }
+  @media (max-width: 1000px) { .hero { grid-template-columns: 1fr; } }
+  .hero-copy { display: flex; flex-direction: column; gap: 22px; }
+  .hero-title { font-size: clamp(34px, 5vw, 62px); line-height: 1.08; font-weight: 600; letter-spacing: -0.02em; color: var(--text); max-width: 720px; }
+  .hero-sub { font-size: 18px; line-height: 1.6; color: var(--text-dim); max-width: 560px; }
+  .hero-ctas { display: flex; gap: 12px; padding-top: 10px; flex-wrap: wrap; }
+  .hero-note { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em; color: var(--text-ghost); padding-top: 6px; }
+
+  .preview-card { border: 1px solid var(--border-mid); background: var(--bg-card); display: flex; flex-direction: column; }
+  .preview-head { display: flex; justify-content: space-between; align-items: center; padding: 11px 16px; border-bottom: 1px solid var(--border); }
+  .preview-head-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em; color: var(--text-faint); }
+  .preview-body { border-left: 3px solid var(--accent); padding: 18px 18px 20px; display: flex; flex-direction: column; gap: 13px; }
+  .preview-body.empty { border-left-color: var(--border-mid); align-items: flex-start; }
+  .tag-row { display: flex; gap: 7px; flex-wrap: wrap; }
+  .tag { font-family: var(--mono); font-size: 9.5px; padding: 3px 7px; border: 1px solid var(--border-hi); color: var(--text-dim); }
+  .tag.sev-hi { background: var(--accent); border-color: var(--accent); color: var(--bg); font-weight: 700; }
+  .tag.confirmed { border-color: var(--good); color: var(--good); }
+  .tag.speculative { border-color: var(--text-faint); color: var(--text-faint); }
+  .preview-title { font-size: 19px; line-height: 1.35; font-weight: 500; color: var(--text); }
+  .preview-desc { font-size: 14px; line-height: 1.6; color: var(--text-dim); }
+  .preview-path-wrap { border-top: 1px dashed var(--border-mid); padding-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+  .preview-path { font-family: var(--mono); font-size: 11px; line-height: 1.7; color: var(--good); word-break: break-word; }
+  .preview-path .lag { color: var(--text-faint); }
+  .preview-quote { border-left: 2px solid var(--border-hi); padding-left: 12px; font-size: 13px; line-height: 1.55; color: var(--text-faint); font-style: italic; }
+
+  /* ---------------- numbered sections ---------------- */
+  .section { display: grid; grid-template-columns: 90px minmax(0, 1fr); border-bottom: 1px solid var(--border); }
+  @media (max-width: 700px) { .section { grid-template-columns: 1fr; } .section-num { padding: 32px 0 0 var(--pad) !important; } }
+  .section.alt { background: var(--bg-alt); }
+  .section-num { padding: 54px 0 0 var(--pad); font-family: var(--mono); font-size: 12px; color: var(--text-ghost); }
+  .section-num.accent { color: var(--accent); }
+  .section-body { padding: 50px var(--pad) 54px 0; }
+  @media (max-width: 700px) { .section-body { padding: 24px var(--pad) 44px; } }
+  .split { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 60px; align-items: center; }
+  .split.start { align-items: start; }
+  @media (max-width: 900px) { .split { grid-template-columns: 1fr; } }
+  .col { display: flex; flex-direction: column; gap: 16px; }
+
+  .bar-row { display: flex; align-items: center; gap: 12px; }
+  .bar-label { font-family: var(--mono); font-size: 11px; color: var(--text-faint); width: 108px; flex-shrink: 0; }
+  .bar-track { height: 9px; background: var(--border-hi); }
+  .bar-val { font-family: var(--mono); font-size: 11px; color: var(--text-dim); width: 34px; text-align: right; margin-left: auto; }
+  .caption { font-family: var(--mono); font-size: 10px; color: var(--text-ghost); }
+
+  .callout {
+    display: flex; gap: 10px; align-items: flex-start; border: 1px dashed var(--accent);
+    padding: 12px 14px; max-width: 580px; margin-top: 6px;
+  }
+  .callout-text { font-size: 13px; line-height: 1.55; color: var(--accent); }
+
+  .not-for-row { display: flex; gap: 10px; align-items: flex-start; }
+  .not-for-text { font-size: 13.5px; line-height: 1.5; color: var(--text-dim); }
+
+  .metric-big { font-family: var(--mono); font-size: clamp(38px, 6vw, 64px); font-weight: 700; letter-spacing: -0.02em; color: var(--good); }
+  .metric-row { display: flex; align-items: baseline; gap: 28px; flex-wrap: wrap; }
+  .metric-desc { font-size: 18px; line-height: 1.5; color: var(--text-dim); max-width: 520px; }
+
+  .stage-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+  @media (max-width: 900px) { .stage-grid { grid-template-columns: 1fr; } }
+  .stage-card { border: 1px solid var(--border-mid); background: var(--bg-card); padding: 20px 22px; display: flex; flex-direction: column; gap: 9px; }
+  .stage-card.hi { border-color: var(--accent); background: var(--accent-bg); }
+  .stage-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em; color: var(--text-faint); }
+  .stage-label.hi { color: var(--accent); }
+  .stage-num { font-family: var(--mono); font-size: 30px; font-weight: 700; color: var(--text); }
+  .stage-num.hi { color: var(--accent); }
+  .stage-desc { font-size: 13.5px; line-height: 1.5; color: var(--text-dim); }
+
+  .funnel-bar { display: flex; height: 34px; border: 1px solid var(--border-mid); }
+  .funnel-dropped { background: var(--border); display: flex; align-items: center; padding-left: 14px; }
+  .funnel-dropped span { font-family: var(--mono); font-size: 11px; color: var(--text-faint); }
+  .funnel-kept { background: var(--good); }
+  .funnel-labels { display: flex; justify-content: space-between; }
+  .funnel-labels span { font-family: var(--mono); font-size: 10px; }
+
+  .assumption-title {
+    font-size: clamp(24px, 3vw, 32px); line-height: 1.3; font-weight: 500; color: var(--text);
+    max-width: 640px; border-left: 3px solid var(--accent); padding-left: 24px;
+  }
+  .kill-item { display: flex; gap: 12px; }
+  .kill-letter { font-family: var(--mono); font-size: 10px; color: var(--text-ghost); padding-top: 2px; }
+  .kill-text { font-size: 13.5px; line-height: 1.55; color: var(--text-dim); }
+
+  .evidence-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+  @media (max-width: 900px) { .evidence-grid { grid-template-columns: 1fr; } }
+  .ticker-card { border: 1px solid var(--border-mid); background: var(--bg-card); padding: 22px 24px; display: flex; flex-direction: column; gap: 12px; }
+  .ticker-head { display: flex; justify-content: space-between; align-items: baseline; }
+  .ticker-sym { font-family: var(--mono); font-size: 13px; color: var(--text-dim); }
+  .ticker-name { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; color: var(--text-faint); }
+  .ticker-ret { font-family: var(--mono); font-size: 34px; font-weight: 700; }
+  .ticker-bar-track { height: 8px; background: var(--border); }
+  .ticker-bar-fill { height: 100%; }
+  .ticker-desc { font-size: 13.5px; line-height: 1.5; color: var(--text-dim); }
+
+  .lesson-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+  @media (max-width: 700px) { .lesson-grid { grid-template-columns: 1fr; } }
+  .lesson-card { border-left: 3px solid var(--good); background: var(--good-bg); padding: 20px 24px; display: flex; flex-direction: column; gap: 9px; }
+  .lesson-card.accent { border-left-color: var(--accent); background: var(--accent-bg); }
+  .lesson-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em; color: var(--good); }
+  .lesson-label.accent { color: var(--accent); }
+  .lesson-text { font-size: 15px; line-height: 1.6; color: var(--text-dim); }
+
+  .support-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 26px; }
+  @media (max-width: 700px) { .support-grid { grid-template-columns: 1fr; } }
+  .support-num { font-family: var(--mono); font-size: 20px; font-weight: 700; color: var(--text); }
+  .support-desc { font-size: 13.5px; line-height: 1.5; color: var(--text-dim); }
+
+  /* ---------------- how it works ---------------- */
+  .plain-section { padding: 58px var(--pad) 60px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 30px; }
+  .plain-section.alt { background: var(--bg-alt); }
+  .pipeline-wrap { border: 1px solid var(--border-mid); background: var(--bg-card); padding: 24px; overflow-x: auto; }
+  .pipeline-wrap svg { min-width: 720px; }
+
+  /* ---------------- sources ---------------- */
+  .sources-grid { display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 60px; align-items: start; }
+  @media (max-width: 900px) { .sources-grid { grid-template-columns: 1fr; } }
+  .source-list { display: flex; flex-direction: column; border-top: 1px solid var(--border-mid); }
+  .source-row { display: grid; grid-template-columns: 190px minmax(0, 1fr) 200px; gap: 20px; padding: 14px 0; border-bottom: 1px solid var(--border); align-items: baseline; }
+  @media (max-width: 700px) { .source-row { grid-template-columns: 1fr; gap: 4px; } }
+  .source-name { font-family: var(--mono); font-size: 12.5px; color: var(--text); }
+  .source-desc { font-size: 14px; color: var(--text-dim); }
+  .source-note { font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); }
+  .source-note.warn { color: var(--accent); }
+
+  /* ---------------- not-this ---------------- */
+  .not-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+  @media (max-width: 900px) { .not-grid { grid-template-columns: 1fr; } }
+  .not-card { border: 1px solid var(--border); padding: 20px 22px; display: flex; flex-direction: column; gap: 9px; }
+  .not-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em; color: var(--text-faint); }
+  .not-desc { font-size: 14.5px; line-height: 1.6; color: var(--text-dim); }
+
+  /* ---------------- team / cta ---------------- */
+  .team-section { padding: 62px var(--pad) 66px; display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 60px; align-items: center; }
+  @media (max-width: 1000px) { .team-section { grid-template-columns: 1fr; } }
+  .team-title { font-size: clamp(26px, 4vw, 38px); line-height: 1.2; font-weight: 600; letter-spacing: -0.015em; color: var(--text); max-width: 640px; }
+  .subscribe-card { border: 1px solid var(--border-mid); background: var(--bg-card); padding: 22px 24px; display: flex; flex-direction: column; gap: 12px; }
+  .subscribe-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .subscribe-input { flex-grow: 1; min-width: 160px; border: 1px solid var(--border-hi); background: var(--bg); padding: 11px 13px; font-family: var(--mono); font-size: 11.5px; color: var(--text-ghost); }
+  .subscribe-btn { padding: 11px 18px; background: var(--text); color: var(--bg); font-family: var(--mono); font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; border: none; cursor: not-allowed; }
+  .subscribe-hint { font-size: 12px; line-height: 1.5; color: var(--text-ghost); }
+  .subscribe-hint code { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+
+  /* ---------------- footer ---------------- */
+  .footer {
+    padding: 22px var(--pad) 26px; border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center; gap: 24px;
+    background: var(--bg-alt); flex-wrap: wrap;
+  }
+  .footer-brand { display: flex; align-items: center; gap: 10px; }
+  .footer-tag { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; color: var(--text-ghost); }
+  .footer-note { font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; color: var(--text-ghost); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ================= nav ================= -->
+  <div class="nav">
+    <a class="brand" href="/" style="color: inherit;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round">
+        <g stroke="#e8e4dc" stroke-width="1.75"><path d="M2.5 5.5L10.5 11.2"/><path d="M2.5 12H10.5"/><path d="M2.5 18.5L10.5 12.8"/><path d="M13.5 12H21.5"/></g>
+        <path d="M12 7V17" stroke="#d98324" stroke-width="2.4"/>
+      </svg>
+      <div class="wordmark">CHOKEPOINT</div>
+      <div class="team-tag">S.S.DEE</div>
+    </a>
+    <div class="nav-links">
+      <a href="#how-it-works">How it works</a>
+      <a href="#sources">Sources</a>
+      <a href="#not-this">Method</a>
+      <a href="#team">Team</a>
+      <a class="btn btn-outline-accent" href="/app">READ THE DIGEST</a>
+    </div>
+  </div>
+
+  <!-- ================= live strip ================= -->
+  <div class="strip" id="live-strip">
+    <div class="stat">
+      <div class="stat-label">SEVERITY 4+ OPEN</div>
+      <div class="stat-val accent" id="stat-severe">&mdash;<div class="stat-dot"></div></div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">DOCUMENTS / 7D</div>
+      <div class="stat-val" id="stat-docs">&mdash;</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">SURFACED</div>
+      <div class="stat-val good" id="stat-surfaced">&mdash;</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">NODES TRACKED</div>
+      <div class="stat-val" id="stat-nodes">&mdash;</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">LAST POLL</div>
+      <div class="stat-val" id="stat-poll">&mdash;</div>
+    </div>
+  </div>
+
+  <!-- ================= hero ================= -->
+  <div class="hero">
+    <div class="hero-copy">
+      <div class="eyebrow accent">RAM &amp; GPU SUPPLY CHAIN · ATTENTION FILTER</div>
+      <div class="hero-title">Know what happened to memory and accelerator supply — without reading 500 articles a day.</div>
+      <div class="hero-sub">Chokepoint polls earthquake bulletins, SEC filings, export-control notices and the semiconductor trade press, filters them against a 75-node supply graph, then has a model classify what survives and draft the alert.</div>
+      <div class="hero-ctas">
+        <a class="btn btn-primary" href="/app">READ THIS WEEK'S DIGEST</a>
+        <a class="btn btn-ghost" href="#how-it-works">HOW IT WORKS</a>
+      </div>
+      <div class="hero-note">Free public data only. No paywalled bodies stored. No MNPI exposure.</div>
+    </div>
+
+    <!-- live entry preview -->
+    <div class="preview-card">
+      <div class="preview-head">
+        <div class="preview-head-label">LATEST ALERT</div>
+        <div class="preview-head-label" id="preview-date">&mdash;</div>
+      </div>
+      <div class="preview-body" id="preview-body">
+        <div class="preview-title">Loading the latest entry&hellip;</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 01 problem ================= -->
+  <div class="section">
+    <div class="section-num">01</div>
+    <div class="section-body">
+      <div class="split">
+        <div class="col">
+          <div class="eyebrow">PROBLEM</div>
+          <div class="h2">Disruption news for RAM and GPU supply arrives fragmented, and mostly irrelevant.</div>
+          <div class="body-text">A quake bulletin from USGS, an 8-K from EDGAR, a Federal Register export-control notice, and eight trade outlets each break a different piece of the same week. Almost none of it moves the chain. The few items that do are indistinguishable from the rest until somebody who knows the graph reads them — and that person does not have two hours a day.</div>
+        </div>
+        <div class="card" style="display:flex; flex-direction:column; gap:14px;">
+          <div class="stat-label">ONE WEEK, ONE ANALYST</div>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <div class="bar-row"><div class="bar-label">GDELT</div><div class="bar-track" style="width:100%"></div><div class="bar-val">163</div></div>
+            <div class="bar-row"><div class="bar-label">Trade RSS</div><div class="bar-track" style="width:42%"></div><div class="bar-val">68</div></div>
+            <div class="bar-row"><div class="bar-label">SEC EDGAR</div><div class="bar-track" style="width:13%"></div><div class="bar-val">21</div></div>
+            <div class="bar-row"><div class="bar-label">Fed. Register</div><div class="bar-track" style="width:5%"></div><div class="bar-val">9</div></div>
+            <div class="bar-row"><div class="bar-label">USGS</div><div class="bar-track" style="width:2.5%"></div><div class="bar-val">4</div></div>
+          </div>
+          <div style="border-top:1px dashed var(--border-mid); padding-top:12px; display:flex; justify-content:space-between; align-items:baseline;">
+            <div class="bar-label" style="width:auto;">TOTAL</div>
+            <div class="mono" style="font-size:18px; font-weight:700; color:var(--text);">265</div>
+          </div>
+          <div class="caption">Illustrative split of a representative 265-document week — the 265 → 14 total is measured on a live run; the per-source breakdown above is a plausible split, not a logged one.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 02 target user ================= -->
+  <div class="section">
+    <div class="section-num">02</div>
+    <div class="section-body">
+      <div class="split start">
+        <div class="col">
+          <div class="eyebrow">TARGET USER</div>
+          <div class="h2">Capacity and procurement planners at server OEMs and data-centre buyers.</div>
+          <div class="body-text">People who must hold a current mental model of DRAM, HBM and CoWoS supply because their build plan depends on it — and who today assemble that model by hand, from trade press, over coffee, inconsistently.</div>
+          <div class="callout">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d98324" stroke-width="1.8" style="flex-shrink:0; margin-top:2px;"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.2v.1"/></svg>
+            <div class="callout-text">Unvalidated. We have not yet run a single planner interview — see the riskiest assumption below.</div>
+          </div>
+        </div>
+        <div class="card" style="display:flex; flex-direction:column; gap:16px;">
+          <div class="stat-label">EXPLICITLY NOT FOR</div>
+          <div style="display:flex; flex-direction:column; gap:11px;">
+            <div class="not-for-row"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6d7681" stroke-width="2" style="flex-shrink:0; margin-top:2px;"><path d="M6 6l12 12M18 6L6 18"/></svg><div class="not-for-text">Traders looking for an edge. The market reprices these events inside one session.</div></div>
+            <div class="not-for-row"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6d7681" stroke-width="2" style="flex-shrink:0; margin-top:2px;"><path d="M6 6l12 12M18 6L6 18"/></svg><div class="not-for-text">Anyone needing shipment-level telemetry. RAM and GPUs move by air; free air-freight telemetry does not exist.</div></div>
+            <div class="not-for-row"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6d7681" stroke-width="2" style="flex-shrink:0; margin-top:2px;"><path d="M6 6l12 12M18 6L6 18"/></svg><div class="not-for-text">Consumers tracking GPU retail prices. We stop at the channel, not the shelf.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 03 outcome metric ================= -->
+  <div class="section alt">
+    <div class="section-num">03</div>
+    <div class="section-body" style="display:flex; flex-direction:column; gap:28px;">
+      <div class="col">
+        <div class="eyebrow">OUTCOME METRIC</div>
+        <div class="metric-row">
+          <div class="metric-big">265 → 14</div>
+          <div class="metric-desc">documents a reader has to get through per weekly run — under a hard constraint that nothing severity-4 or above may be dropped.</div>
+        </div>
+      </div>
+
+      <div class="stage-grid">
+        <div class="stage-card">
+          <div class="stage-label">STAGE 1 · REGISTRY PREFILTER</div>
+          <div class="stage-num">~92%</div>
+          <div class="stage-desc">dropped before a model is ever called. A document mentioning no supply-chain entity — or one with no supply language around it — never reaches the API.</div>
+        </div>
+        <div class="stage-card">
+          <div class="stage-label">STAGE 2 · CLUSTER + CLASSIFY</div>
+          <div class="stage-num">14</div>
+          <div class="stage-desc">stories, not articles. A 48-hour TF-IDF window with a shared-entity gate collapses the same event reported five ways into one entry.</div>
+        </div>
+        <div class="stage-card hi">
+          <div class="stage-label hi">THE CONSTRAINT · RECALL</div>
+          <div class="stage-num hi" style="font-size:22px;">not yet measured</div>
+          <div class="stage-desc">Filtering is only a win if recall holds, and we have not backtested it yet. A severity-4+ event the filter swallowed is a product failure, not a saved minute — so the number above means nothing until this one exists.</div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <div class="funnel-bar">
+          <div class="funnel-dropped" style="width:94.7%;"><span>251 dropped</span></div>
+          <div class="funnel-kept" style="width:5.3%;"></div>
+        </div>
+        <div class="funnel-labels"><span class="mono" style="color:var(--text-ghost);">0</span><span class="mono" style="color:var(--good);">14 surfaced</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 04 riskiest assumption ================= -->
+  <div class="section">
+    <div class="section-num accent">04</div>
+    <div class="section-body">
+      <div class="split start">
+        <div class="col" style="gap:18px;">
+          <div class="eyebrow accent">RISKIEST ASSUMPTION</div>
+          <div class="assumption-title">That awareness is worth having <em style="color:var(--accent);">after</em> the market has already repriced.</div>
+          <div class="body-text">Chokepoint claims no speed edge, and it takes no directional view. Both are deliberate — the evidence below is what forced them. But it means the product's entire value rests on a reader who needs to <em>understand</em> the chain rather than trade it. If the only people who care about supply disruption are the ones who wanted to be first, there is no product here.</div>
+          <div class="body-text">This is the assumption we are testing next, and it is not testable from a dataset. It needs planner interviews.</div>
+        </div>
+        <div class="card" style="display:flex; flex-direction:column; gap:15px;">
+          <div class="stat-label">HOW WE PLAN TO KILL IT</div>
+          <div style="display:flex; flex-direction:column; gap:13px;">
+            <div class="kill-item"><div class="kill-letter">A</div><div class="kill-text">Eight interviews with planners at OEMs and DC buyers. One question decides it: when a fab goes down, what do you actually do in the next week?</div></div>
+            <div class="kill-item"><div class="kill-letter">B</div><div class="kill-text">Ship the digest to five of them weekly for a month. Measure opens and forwards, not stars.</div></div>
+            <div class="kill-item"><div class="kill-letter">C</div><div class="kill-text">Backtest recall: replay twelve months of known disruptions and count how many the filter would have surfaced.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 05 evidence ================= -->
+  <div class="section alt">
+    <div class="section-num">05</div>
+    <div class="section-body" style="display:flex; flex-direction:column; gap:34px;">
+      <div class="col">
+        <div class="eyebrow">EVIDENCE</div>
+        <div class="h2" style="max-width:700px;">We ran the Hualien earthquake as an event study before writing the classifier. It changed the product.</div>
+        <div class="body-text" style="max-width:620px;">2024-04-03, magnitude 7.4, off Taiwan's east coast — inside the sensor's 188 km magnitude-scaled radius for the Hsinchu and Taichung fabs. Abnormal return on day one, measured against SOXX:</div>
+      </div>
+
+      <div class="evidence-grid">
+        <div class="ticker-card">
+          <div class="ticker-head"><div class="ticker-sym">MU</div><div class="ticker-name">MICRON</div></div>
+          <div class="ticker-ret" style="color:var(--good);">+4.0%</div>
+          <div class="ticker-bar-track"><div class="ticker-bar-fill" style="width:100%; background:var(--good);"></div></div>
+          <div class="ticker-desc">Memory supplier. A rival's capacity is impaired, so scarcity is pricing power.</div>
+        </div>
+        <div class="ticker-card">
+          <div class="ticker-head"><div class="ticker-sym">TSM</div><div class="ticker-name">TSMC</div></div>
+          <div class="ticker-ret" style="color:var(--text);">+1.0%</div>
+          <div class="ticker-bar-track"><div class="ticker-bar-fill" style="width:25%; background:var(--border-hi);"></div></div>
+          <div class="ticker-desc">The disrupted party — and it went <em>up</em>. Fear priced in at the open, relief by the close.</div>
+        </div>
+        <div class="ticker-card">
+          <div class="ticker-head"><div class="ticker-sym">NVDA</div><div class="ticker-name">NVIDIA</div></div>
+          <div class="ticker-ret" style="color:var(--accent);">&minus;0.8%</div>
+          <div class="ticker-bar-track"><div class="ticker-bar-fill" style="width:20%; background:var(--accent);"></div></div>
+          <div class="ticker-desc">Consumer of TSMC and HBM capacity. Fell to &minus;4% by day two.</div>
+        </div>
+      </div>
+
+      <div class="lesson-grid">
+        <div class="lesson-card">
+          <div class="lesson-label">LESSON 1 — NO SPEED EDGE</div>
+          <div class="lesson-text">The whole repricing happened inside one session. On free daily data there is nothing left to be early to, so we stopped trying and built for comprehension instead.</div>
+        </div>
+        <div class="lesson-card accent">
+          <div class="lesson-label accent">LESSON 2 — THE SIGN IS BACKWARDS</div>
+          <div class="lesson-text">A disruption is bullish for the disrupted chain's sellers. A monitor that scored risk as a magnitude and implied a direction would have been confidently, expensively wrong.</div>
+        </div>
+      </div>
+
+      <div class="card" style="padding:24px 26px; gap:16px; display:flex; flex-direction:column;">
+        <div class="stat-label">SUPPORTING EVIDENCE</div>
+        <div class="support-grid">
+          <div style="display:flex; flex-direction:column; gap:7px;">
+            <div class="support-num">265 → 14</div>
+            <div class="support-desc">Measured on a live run, not a synthetic set. The prefilter holds up outside the lab.</div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:7px;">
+            <div class="support-num" id="support-nodes">75 / 24</div>
+            <div class="support-desc">Nodes and dependency edges, each edge carrying a lag range. The propagation sentence is graph traversal — no model involved, so it cannot hallucinate a path.</div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:7px;">
+            <div class="support-num">0.35</div>
+            <div class="support-desc">The confidence the offline heuristic reports about itself. Running without a key degrades loudly rather than quietly.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= how it works ================= -->
+  <div class="plain-section" id="how-it-works">
+    <div class="col" style="gap:12px;">
+      <div class="eyebrow">HOW IT WORKS</div>
+      <div class="h2" style="font-size:clamp(22px,3vw,30px); max-width:640px;">Five stages. The model is used in exactly one of them.</div>
+    </div>
+
+    <div class="pipeline-wrap">
+      <svg viewBox="0 0 1180 190" width="100%" height="190" fill="none" font-family="JetBrains Mono, monospace">
+        <g stroke="#46505a" stroke-width="1.2">
+          <rect x="1" y="12" width="150" height="30" fill="#1e2228"/>
+          <rect x="1" y="52" width="150" height="30" fill="#1e2228"/>
+          <rect x="1" y="92" width="150" height="30" fill="#1e2228"/>
+          <rect x="1" y="132" width="150" height="30" fill="#1e2228"/>
+        </g>
+        <g fill="#9aa3ad" font-size="10.5">
+          <text x="14" y="31">USGS · quakes</text>
+          <text x="14" y="71">EDGAR · 8-K/6-K</text>
+          <text x="14" y="111">Fed. Register</text>
+          <text x="14" y="151">GDELT · trade RSS</text>
+        </g>
+        <g stroke="#333941" stroke-width="1.2">
+          <path d="M151 27h40v50h20M151 67h60M151 107h40v-30h20M151 147h40v-70h20"/>
+        </g>
+        <g stroke="#46505a" stroke-width="1.2"><rect x="211" y="62" width="140" height="30" fill="#1e2228"/></g>
+        <text x="224" y="81" fill="#9aa3ad" font-size="10.5">raw_documents</text>
+        <text x="224" y="105" fill="#46505a" font-size="9">append-only, hashed</text>
+        <g stroke="#333941" stroke-width="1.2"><path d="M351 77h44"/><path d="M395 73l8 4-8 4z" fill="#333941"/></g>
+
+        <g stroke="#7fb3a3" stroke-width="1.4"><rect x="405" y="62" width="160" height="30" fill="#181f1d"/></g>
+        <text x="418" y="81" fill="#7fb3a3" font-size="10.5">registry prefilter</text>
+        <text x="418" y="105" fill="#7fb3a3" font-size="9">drops ~92% · no model</text>
+        <g stroke="#333941" stroke-width="1.2"><path d="M565 77h44"/><path d="M609 73l8 4-8 4z" fill="#333941"/></g>
+
+        <g stroke="#46505a" stroke-width="1.2"><rect x="619" y="62" width="150" height="30" fill="#1e2228"/></g>
+        <text x="632" y="81" fill="#9aa3ad" font-size="10.5">TF-IDF clustering</text>
+        <text x="632" y="105" fill="#46505a" font-size="9">48h window, entity gate</text>
+        <g stroke="#333941" stroke-width="1.2"><path d="M769 77h44"/><path d="M813 73l8 4-8 4z" fill="#333941"/></g>
+
+        <g stroke="#d98324" stroke-width="1.4"><rect x="823" y="62" width="170" height="30" fill="#231d15"/></g>
+        <text x="836" y="81" fill="#d98324" font-size="10.5">classify + draft</text>
+        <text x="836" y="105" fill="#d98324" font-size="9">structured output · the model</text>
+        <g stroke="#333941" stroke-width="1.2"><path d="M993 77h44"/><path d="M1037 73l8 4-8 4z" fill="#333941"/></g>
+
+        <g stroke="#46505a" stroke-width="1.2"><rect x="1047" y="62" width="130" height="30" fill="#1e2228"/></g>
+        <text x="1060" y="81" fill="#9aa3ad" font-size="10.5">digest / alert</text>
+
+        <g stroke="#46505a" stroke-width="1" stroke-dasharray="3 3"><path d="M908 42V20h-60"/></g>
+        <text x="838" y="24" fill="#46505a" font-size="9" text-anchor="end">entity graph supplies the propagation path — deterministic, not generated</text>
+        <g stroke="#46505a" stroke-width="1" stroke-dasharray="3 3"><path d="M908 92v48h-8"/></g>
+        <text x="890" y="143" fill="#46505a" font-size="9" text-anchor="end">market annotation: abnormal return vs SOXX, attached but never interpreted</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ================= sources ================= -->
+  <div class="plain-section" id="sources">
+    <div class="sources-grid">
+      <div class="col">
+        <div class="eyebrow">SOURCES</div>
+        <div class="h2" style="font-size:clamp(22px,3vw,30px);">Every feed is free, and every one is legally clean.</div>
+        <div class="body-text" style="font-size:15px;">Paywalled trade press is stored as headline, URL and timestamp only — the fetcher refuses bodies even when the feed volunteers them. Public data only means no MNPI exposure.</div>
+      </div>
+      <div class="source-list">
+        <div class="source-row"><div class="source-name">USGS</div><div class="source-desc">Earthquakes near tracked fabs</div><div class="source-note">magnitude-scaled radius</div></div>
+        <div class="source-row"><div class="source-name">SEC EDGAR</div><div class="source-desc">8-K and 6-K material events</div><div class="source-note">real User-Agent required</div></div>
+        <div class="source-row"><div class="source-name">Federal Register</div><div class="source-desc">Export controls, Entity List additions</div><div class="source-note">scoped to BIS / OFAC / USTR</div></div>
+        <div class="source-row"><div class="source-name">GDELT 2.0</div><div class="source-desc">Global news, 15-minute cadence</div><div class="source-note warn">rate-limited; degrades to RSS</div></div>
+        <div class="source-row"><div class="source-name">Trade RSS</div><div class="source-desc">DigiTimes, EE Times, Tom's Hardware, The Register</div><div class="source-note">carries the narrative load</div></div>
+        <div class="source-row"><div class="source-name">Yahoo Finance</div><div class="source-desc">Daily bars, for annotation only</div><div class="source-note">behind a swappable interface</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= what it is not ================= -->
+  <div class="plain-section alt" id="not-this">
+    <div class="col" style="gap:12px;">
+      <div class="eyebrow">WHAT THIS IS NOT</div>
+      <div class="h2" style="max-width:760px;">It is not a trading signal generator, and that is a design decision rather than a missing feature.</div>
+    </div>
+    <div class="not-grid">
+      <div class="not-card">
+        <div class="not-label">NO DIRECTION</div>
+        <div class="not-desc">We report what happened and how it propagates. The market annotation is attached and left uninterpreted, because the Hualien study showed the naive interpretation is inverted.</div>
+      </div>
+      <div class="not-card">
+        <div class="not-label">NO TELEMETRY THEATRE</div>
+        <div class="not-desc">Shipping is tracked as news and chokepoint events. RAM and GPUs fly; free air-freight telemetry does not exist, and free ocean data covers the least relevant leg.</div>
+      </div>
+      <div class="not-card">
+        <div class="not-label">NO QUIET DEGRADING</div>
+        <div class="not-desc">Without an API key the pipeline still runs on a deterministic heuristic — and says so, at confidence 0.35, on every entry it produces.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= team + CTA ================= -->
+  <div class="team-section" id="team">
+    <div class="col" style="gap:18px;">
+      <div class="eyebrow">TEAM S.S.DEE</div>
+      <div class="team-title">Read one digest. If it tells you something you did not know, we were right about the user.</div>
+      <div class="hero-ctas">
+        <a class="btn btn-primary" href="/app">READ THIS WEEK'S DIGEST</a>
+        <a class="btn btn-ghost" href="https://github.com" target="_blank" rel="noopener">SOURCE ON GITHUB</a>
+      </div>
+    </div>
+    <div class="subscribe-card">
+      <div class="stat-label">WEEKLY DIGEST · NO ACCOUNT</div>
+      <div class="subscribe-row">
+        <input class="subscribe-input" placeholder="you@company.com" disabled>
+        <button class="subscribe-btn" disabled>SUBSCRIBE</button>
+      </div>
+      <div class="subscribe-hint">Planned: one email on Mondays, with severity-4+ events interrupting. Today the digest is generated on demand — <code>semimon.cli run</code>.</div>
+    </div>
+  </div>
+
+  <!-- ================= footer ================= -->
+  <div class="footer">
+    <div class="footer-brand">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-linecap="round">
+        <g stroke="#46505a" stroke-width="2"><path d="M2.5 5.5L10.5 11.2"/><path d="M2.5 12H10.5"/><path d="M2.5 18.5L10.5 12.8"/><path d="M13.5 12H21.5"/></g>
+        <path d="M12 7V17" stroke="#6d7681" stroke-width="2.6"/>
+      </svg>
+      <div class="footer-tag">CHOKEPOINT · TEAM S.S.DEE · 2026</div>
+    </div>
+    <div class="footer-note">Awareness tool. Not investment advice, and no directional view is implied by anything above.</div>
+  </div>
+
+</div>
+
+<script src="./landing.js"></script>
+</body>
+</html>

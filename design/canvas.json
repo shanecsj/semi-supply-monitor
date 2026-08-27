@@ -1,0 +1,25 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "title": "Landing page", "x": 0, "y": 0, "w": 1440, "h": 5400, "print": "flow" },
+    { "file": "Brand.dc.html", "title": "Logo & app icon", "x": 1600, "y": 0, "w": 1080, "h": 1120 },
+    { "file": "Digest.dc.html", "title": "App — digest (clickable)", "x": 1600, "y": 1280, "w": 1440, "h": 980, "is_interactive": true },
+    { "file": "Mobile.dc.html", "title": "Mobile alert (clickable)", "x": 1600, "y": 2400, "w": 390, "h": 844, "is_interactive": true }
+  ],
+  "annotations": [
+    {
+      "id": "brief",
+      "x": 0,
+      "y": -280,
+      "w": 720,
+      "text": "CHOKEPOINT — Direction A, built out. Team S.S.Dee.\n\nLanding page carries all five required sections (01-05) plus how-it-works, sources, and an honest \"what this is not\". Copy and every figure come from the repo: 265 -> 14, ~92% prefilter, 75 nodes / 24 edges, the Hualien event study, confidence 0.35 for the offline heuristic.\n\nTwo things are NOT from the repo: the target user (still unvalidated - flagged on the page itself) and the per-source document counts in section 01, which are a plausible split of the real 265 total."
+    },
+    {
+      "id": "app-note",
+      "x": 1600,
+      "y": 1160,
+      "w": 620,
+      "text": "The two app artboards are clickable. In the digest: severity and commodity filters (severity 5 reaches the empty state), the confirmed-only toggle, and clicking any entry loads its drafted alert on the right. On mobile: the ALERT / PATH / SOURCES tabs.\n\nThe six digest entries are SAMPLE events - lag ranges traced against config/entities.yaml, but the events themselves are invented. Swap them for a real run before this goes in front of anyone."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

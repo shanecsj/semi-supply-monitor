@@ -6,6 +6,7 @@
     python -m semimon.cli verify               # acceptance checks
     python -m semimon.cli graph <node_id>      # propagation path
     python -m semimon.cli resolve "<text>"     # entity resolution
+    python -m semimon.cli serve                # web UI + JSON API
 """
 
 from __future__ import annotations
@@ -92,6 +93,15 @@ def cmd_resolve(args) -> int:
         print(f"  {node_id:24s} {node.type:8s} {node.name}")
     print(f"\n  stages : {registry.stages_for(hits)}")
     print(f"  tickers: {registry.tickers(hits)}")
+    return 0
+
+
+def cmd_serve(args) -> int:
+    from .api import build_app
+
+    app = build_app(args.db)
+    print(f"CHOKEPOINT serving on http://{args.host}:{args.port}")
+    app.run(host=args.host, port=args.port, debug=args.debug, threaded=True)
     return 0
 
 
@@ -198,6 +208,12 @@ def main(argv=None) -> int:
     verify = sub.add_parser("verify", help="run acceptance checks")
     verify.add_argument("--no-market", action="store_true")
     verify.set_defaults(func=cmd_verify)
+
+    serve = sub.add_parser("serve", help="serve the web UI + JSON API")
+    serve.add_argument("--host", default="127.0.0.1")
+    serve.add_argument("--port", type=int, default=5000)
+    serve.add_argument("--debug", action="store_true")
+    serve.set_defaults(func=cmd_serve)
 
     args = parser.parse_args(argv)
     return args.func(args)
