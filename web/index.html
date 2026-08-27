@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CHOKEPOINT — digest</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+<div id="app" class="app">
+
+  <!-- ============ top bar ============ -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <a href="/" class="brand-link" title="Back to the CHOKEPOINT overview">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-linecap="round" class="logo">
+          <g stroke="#e8e4dc" stroke-width="1.75"><path d="M2.5 5.5L10.5 11.2"/><path d="M2.5 12H10.5"/><path d="M2.5 18.5L10.5 12.8"/><path d="M13.5 12H21.5"/></g>
+          <path d="M12 7V17" stroke="#d98324" stroke-width="2.4"/>
+        </svg>
+        <div class="wordmark">CHOKEPOINT</div>
+      </a>
+      <div class="range" id="range-label">DIGEST · &mdash;</div>
+    </div>
+    <div class="topbar-right">
+      <div class="sensor-status">
+        <div class="dot" id="sensor-dot"></div>
+        <div id="sensor-label">connecting&hellip;</div>
+      </div>
+      <div id="classifier-label">classifier: &mdash;</div>
+      <button class="btn btn-ghost" id="export-btn">EXPORT MD</button>
+      <button class="btn btn-primary" id="run-btn">RUN NOW</button>
+    </div>
+  </div>
+
+  <div class="layout">
+
+    <!-- ============ filters ============ -->
+    <div class="filters">
+
+      <div class="filter-group">
+        <div class="label">SEVERITY</div>
+        <div class="chip-row" id="severity-chips"></div>
+      </div>
+
+      <div class="filter-group">
+        <div class="label">COMMODITY</div>
+        <div class="chip-row" id="commodity-chips"></div>
+      </div>
+
+      <div class="filter-group">
+        <div class="label">STATUS</div>
+        <div class="toggle" id="confirmed-toggle">
+          <div class="toggle-mark"></div>
+          <div class="toggle-text">Confirmed only</div>
+        </div>
+        <div class="hint">Hides analyst forecasts, rumours and expectations.</div>
+      </div>
+
+      <div class="filter-group bordered">
+        <div class="label">TIGHTEST CHOKEPOINTS</div>
+        <div id="chokepoints"></div>
+      </div>
+
+      <div class="filter-group bordered">
+        <div class="label">NEXT SCHEDULED DATA</div>
+        <div class="scheduled-date" id="scheduled-date">&mdash;</div>
+        <div class="hint" id="scheduled-note"></div>
+      </div>
+
+    </div>
+
+    <!-- ============ entry list ============ -->
+    <div class="entry-pane">
+      <div class="entry-pane-head">
+        <div id="visible-label">loading&hellip;</div>
+        <div class="sort-note">SORTED BY SEVERITY, THEN CONFIDENCE</div>
+      </div>
+      <div class="entry-list" id="entry-list"></div>
+    </div>
+
+    <!-- ============ detail ============ -->
+    <div class="detail-pane" id="detail-pane">
+      <div class="empty-detail" id="empty-detail">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke-linecap="round">
+          <g stroke="#333941" stroke-width="1.75"><path d="M2.5 5.5L10.5 11.2"/><path d="M2.5 12H10.5"/><path d="M2.5 18.5L10.5 12.8"/><path d="M13.5 12H21.5"/></g>
+          <path d="M12 7V17" stroke="#46505a" stroke-width="2.4"/>
+        </svg>
+        <div>SELECT AN ENTRY TO READ THE DRAFTED ALERT</div>
+      </div>
+      <div class="detail-body" id="detail-body" hidden></div>
+    </div>
+
+  </div>
+</div>
+
+<script src="./app.js"></script>
+</body>
+</html>

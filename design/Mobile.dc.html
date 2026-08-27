@@ -1,0 +1,174 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #d98324; } a:hover { color: #f0a04b; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #14161a; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #e8e4dc; display: flex; flex-direction: column; overflow: hidden">
+
+  <!-- header -->
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-bottom: 1px solid #262b31; flex-shrink: 0">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-linecap="round">
+        <g stroke="#e8e4dc" stroke-width="1.9"><path d="M2.5 5.5L10.5 11.2"/><path d="M2.5 12H10.5"/><path d="M2.5 18.5L10.5 12.8"/><path d="M13.5 12H21.5"/></g>
+        <path d="M12 7V17" stroke="#d98324" stroke-width="2.6"/>
+      </svg>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; letter-spacing: 0.1em">CHOKEPOINT</div>
+    </div>
+    <div style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; margin-right: -12px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6d7681" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+    </div>
+  </div>
+
+  <!-- alert banner -->
+  <div style="background: #d98324; color: #14161a; padding: 11px 18px; display: flex; align-items: center; gap: 9px; flex-shrink: 0">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#14161a" stroke-width="2.2" stroke-linecap="round"><path d="M12 4L2.5 20h19z"/><path d="M12 10v4M12 17v.1"/></svg>
+    <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em">SEVERITY 4 · CONFIRMED · INTERRUPTS DIGEST</div>
+  </div>
+
+  <!-- title block -->
+  <div style="padding: 20px 18px 16px; display: flex; flex-direction: column; gap: 11px; border-bottom: 1px solid #262b31; flex-shrink: 0">
+    <div style="font-size: 21px; line-height: 1.3; font-weight: 500; color: #e8e4dc; text-wrap: pretty">Shin-Etsu halts one photoresist line at Naoetsu after chemical leak</div>
+    <div style="display: flex; gap: 6px; flex-wrap: wrap">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; padding: 4px 7px; border: 1px solid #333941; color: #6d7681">FAB INCIDENT</div>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; padding: 4px 7px; border: 1px solid #333941; color: #6d7681">BOTH</div>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; padding: 4px 7px; border: 1px solid #333941; color: #6d7681">HORIZON 6-17 WK</div>
+    </div>
+    <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #46505a">2026-08-26 04:12Z · 5 documents clustered · conf 0.82</div>
+  </div>
+
+  <!-- tabs -->
+  <div style="display: flex; border-bottom: 1px solid #262b31; flex-shrink: 0">
+    <sc-for list="{{tabs}}" as="tab" hint-placeholder-count="3">
+      <div onClick="{{tab.pick}}" style="flex-grow: 1; height: 48px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.08em; color: {{tab.fg}}; border-bottom: 2px solid {{tab.underline}}">{{tab.label}}</div>
+    </sc-for>
+  </div>
+
+  <!-- panes -->
+  <div style="flex-grow: 1; min-height: 0; overflow-y: auto">
+
+    <sc-if value="{{isAlert}}" hint-placeholder-val="{{true}}">
+      <div style="padding: 20px 18px 26px; display: flex; flex-direction: column; gap: 20px">
+        <div style="font-size: 15px; line-height: 1.7; color: #9aa3ad">Shin-Etsu Chemical suspended production on one photoresist line at its Naoetsu plant following a chemical leak, with restart guidance of two to four weeks. Naoetsu is one of a small number of qualified sources for leading-edge photoresist, a stage the registry scores at 0.80 concentration.</div>
+        <div style="font-size: 15px; line-height: 1.7; color: #9aa3ad">Because photoresist feeds both logic and DRAM wafer starts, the effect is not confined to one commodity. The company has not said whether qualified inventory at customer fabs covers the gap, and that is the number that decides whether this matters.</div>
+        <div style="border-left: 2px solid #46505a; padding-left: 14px; font-size: 14px; line-height: 1.6; color: #6d7681; font-style: italic">&ldquo;Production at one line at the Naoetsu plant has been suspended,&rdquo; the company said in a statement.</div>
+        <div style="border: 1px solid #262b31; background: #1a1e23; padding: 14px 16px; display: flex; flex-direction: column; gap: 7px">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #6d7681">MARKET · ATTACHED, NOT INTERPRETED</div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.7; color: #9aa3ad">4063.T −2.1% vs TOPIX (d1)<br>MU +1.4% vs SOXX (d1)<br>TSM −0.3% vs SOXX (d1)</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{isPath}}" hint-placeholder-val="{{false}}">
+      <div style="padding: 20px 18px 26px; display: flex; flex-direction: column; gap: 16px">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #6d7681">PROPAGATION · GRAPH TRAVERSAL, NOT GENERATED</div>
+        <div style="display: flex; flex-direction: column">
+          <sc-for list="{{hops}}" as="hop" hint-placeholder-count="5">
+            <div style="display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 14px">
+              <div style="display: flex; flex-direction: column; align-items: center">
+                <div style="width: 9px; height: 9px; border-radius: 50%; background: {{hop.dot}}; margin-top: 6px; flex-shrink: 0"></div>
+                <div style="width: 1px; flex-grow: 1; background: {{hop.line}}"></div>
+              </div>
+              <div style="padding-bottom: 20px; display: flex; flex-direction: column; gap: 4px">
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: {{hop.fg}}">{{hop.name}}</div>
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #46505a">{{hop.lag}}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="font-size: 13.5px; line-height: 1.6; color: #46505a; border-top: 1px dashed #262b31; padding-top: 14px">Lag ranges come from the registry&#39;s dependency edges. No model produced this path, so it cannot invent a hop that does not exist.</div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{isSources}}" hint-placeholder-val="{{false}}">
+      <div style="padding: 20px 18px 26px; display: flex; flex-direction: column; gap: 12px">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #6d7681">5 DOCUMENTS CLUSTERED</div>
+        <div style="border: 1px solid #262b31; background: #1a1e23; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #e8e4dc">digitimes</div>
+          <div style="font-size: 13.5px; line-height: 1.5; color: #9aa3ad">Shin-Etsu suspends Naoetsu photoresist line</div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #d98324">headline, URL and timestamp only · paywalled</div>
+        </div>
+        <div style="border: 1px solid #262b31; background: #1a1e23; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #e8e4dc">eetimes</div>
+          <div style="font-size: 13.5px; line-height: 1.5; color: #9aa3ad">Chemical leak idles photoresist capacity in Niigata</div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #46505a">full text stored</div>
+        </div>
+        <div style="border: 1px solid #262b31; background: #1a1e23; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #e8e4dc">gdelt</div>
+          <div style="font-size: 13.5px; line-height: 1.5; color: #9aa3ad">3 further documents, same 48-hour cluster</div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #46505a">shared-entity gate: photoresist, shin_etsu</div>
+        </div>
+      </div>
+    </sc-if>
+
+  </div>
+
+  <!-- actions -->
+  <div style="display: flex; gap: 10px; padding: 12px 18px 16px; border-top: 1px solid #262b31; flex-shrink: 0; background: #12141a">
+    <div style="flex-grow: 1; height: 46px; display: flex; align-items: center; justify-content: center; background: #d98324; color: #14161a; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 700; letter-spacing: 0.07em">COPY ALERT</div>
+    <div style="width: 46px; height: 46px; display: flex; align-items: center; justify-content: center; border: 1px solid #46505a">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9aa3ad" stroke-width="1.8" stroke-linecap="round"><path d="M6 4h12v16l-6-4-6 4z"/></svg>
+    </div>
+    <div style="width: 46px; height: 46px; display: flex; align-items: center; justify-content: center; border: 1px solid #46505a">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9aa3ad" stroke-width="1.8" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { tab: 'alert' };
+  }
+
+  renderVals() {
+    const tab = this.state.tab;
+    const defs = [
+      { key: 'alert', label: 'ALERT' },
+      { key: 'path', label: 'PATH' },
+      { key: 'sources', label: 'SOURCES' }
+    ];
+    const hops = [
+      { name: 'shinetsu_naoetsu', lag: 'origin · Niigata, JP' },
+      { name: 'photoresist', lag: 'concentration 0.80' },
+      { name: 'logic_wafer', lag: '3-8 weeks' },
+      { name: 'cowos', lag: '5-14 weeks · joint-tightest node, 0.95' },
+      { name: 'gpu_module', lag: '6-17 weeks' }
+    ];
+
+    return {
+      tabs: defs.map((def) => ({
+        label: def.label,
+        fg: tab === def.key ? '#e8e4dc' : '#6d7681',
+        underline: tab === def.key ? '#d98324' : 'transparent',
+        pick: () => this.setState({ tab: def.key })
+      })),
+      isAlert: tab === 'alert',
+      isPath: tab === 'path',
+      isSources: tab === 'sources',
+      hops: hops.map((hop, index) => ({
+        name: hop.name,
+        lag: hop.lag,
+        dot: index === 0 ? '#d98324' : (index === hops.length - 1 ? '#7fb3a3' : '#46505a'),
+        line: index === hops.length - 1 ? 'transparent' : '#333941',
+        fg: index === 0 || index === hops.length - 1 ? '#e8e4dc' : '#9aa3ad'
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

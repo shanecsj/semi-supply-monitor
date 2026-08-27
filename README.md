@@ -99,15 +99,39 @@ python -m semimon.cli "what changed in HBM"  # one-shot question
 python -m semimon.cli --no-refresh          # never touch the network
 python -m semimon.cli --refresh             # force a refresh
 python -m semimon.cli --no-cache            # re-ask the model, ignore cached answers
-python -m semimon.cli collect               # poll sensors only
+python -m semimon.cli graph hynix_icheon    # propagation path for a node
+python -m semimon.cli resolve "SK Hynix Icheon fab halted"
+python -m semimon.cli collect --days 14     # poll sensors only
+python -m semimon.cli digest --offline      # force heuristic classifier
 python -m semimon.cli digest --out d.md     # full classified digest (slow: ~30min)
 python -m semimon.cli verify                # health check
-python -m semimon.cli graph hynix_icheon    # propagation path for a node
+python -m semimon.cli serve                 # web UI + JSON API, http://127.0.0.1:5000
 ```
 
 `digest` is the original batch report. It classifies every cluster with the LLM,
 which at 10–25s per call takes ~30 minutes. It is no longer on the interactive
 path.
+
+## Web UI
+
+`python -m semimon.cli serve` starts a small Flask server (`semimon/api.py`)
+that serves a static dark-themed UI (`web/`) plus a JSON API:
+
+- `/` — landing page (`web/landing.html`): what the tool is, who it's for, the
+  Hualien evidence, and a live strip (open severity-4+, documents/7d,
+  surfaced, nodes tracked, last poll) pulled from `/api/digest`.
+- `/app` — the digest itself (`web/index.html`).
+
+- `GET /api/digest?days=7` — cluster + classify the last N days and return
+  entries, chokepoint pressure, and run metadata. Same pipeline as
+  `cli digest`, no separate code path.
+- `POST /api/run` — collect (poll every sensor) then rebuild the digest.
+- `GET /api/graph/<node_id>` — a node's propagation path as structured hops.
+
+The UI lets you filter by severity and commodity, hide speculative entries,
+click an entry to read its drafted alert with the propagation path (graph
+traversal, not generated), evidence quote, market annotation and sources, and
+export any entry - or the whole filtered digest - as markdown.
 
 ## Architecture
 
@@ -190,6 +214,8 @@ semimon/market.py        abnormal-return annotation
 semimon/chat.py          grounded RAG chat over the corpus (OpenCode Go)
 semimon/dotenv.py        minimal .env loader, no dependency
 semimon/digest.py        pipeline and markdown rendering
+semimon/api.py           JSON API + static server for the web UI
 semimon/cli.py           command line
+web/                     landing page + digest UI (static HTML/CSS/JS, no build step)
 tests/                   pytest suite
 ```

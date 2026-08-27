@@ -1,0 +1,428 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #d98324; } a:hover { color: #f0a04b; }
+  </style>
+</helmet>
+
+<div style="width: 1440px; height: 980px; box-sizing: border-box; background: #14161a; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #e8e4dc; display: flex; flex-direction: column; overflow: hidden">
+
+  <!-- ============ top bar ============ -->
+  <div style="display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 13px 24px; border-bottom: 1px solid #262b31; flex-shrink: 0">
+    <div style="display: flex; align-items: center; gap: 11px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-linecap="round">
+        <g stroke="#e8e4dc" stroke-width="1.75"><path d="M2.5 5.5L10.5 11.2"/><path d="M2.5 12H10.5"/><path d="M2.5 18.5L10.5 12.8"/><path d="M13.5 12H21.5"/></g>
+        <path d="M12 7V17" stroke="#d98324" stroke-width="2.4"/>
+      </svg>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; letter-spacing: 0.1em; color: #e8e4dc">CHOKEPOINT</div>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.1em; color: #6d7681; border-left: 1px solid #333941; padding-left: 11px">DIGEST · 2026-08-20 → 2026-08-27</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 18px">
+      <div style="display: flex; align-items: center; gap: 7px">
+        <div style="width: 6px; height: 6px; border-radius: 50%; background: #7fb3a3"></div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.08em; color: #6d7681">all 6 sensors polled · 18m ago</div>
+      </div>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.08em; color: #6d7681">classifier: claude-opus-5</div>
+      <div style="padding: 7px 14px; border: 1px solid #46505a; color: #9aa3ad; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.08em">EXPORT MD</div>
+      <div style="padding: 7px 14px; background: #d98324; color: #14161a; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.08em">RUN NOW</div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 244px minmax(0, 1fr) 462px; flex-grow: 1; min-height: 0">
+
+    <!-- ============ filters ============ -->
+    <div style="border-right: 1px solid #262b31; padding: 20px 20px 22px; display: flex; flex-direction: column; gap: 24px; overflow-y: auto">
+
+      <div style="display: flex; flex-direction: column; gap: 11px">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #6d7681">SEVERITY</div>
+        <div style="display: flex; gap: 6px">
+          <sc-for list="{{severityOptions}}" as="opt" hint-placeholder-count="3">
+            <div onClick="{{opt.pick}}" style="flex-grow: 1; text-align: center; padding: 8px 0; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.06em; border: 1px solid {{opt.border}}; background: {{opt.bg}}; color: {{opt.fg}}">{{opt.label}}</div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 11px">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #6d7681">COMMODITY</div>
+        <div style="display: flex; gap: 6px">
+          <sc-for list="{{commodityOptions}}" as="opt" hint-placeholder-count="3">
+            <div onClick="{{opt.pick}}" style="flex-grow: 1; text-align: center; padding: 8px 0; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.06em; border: 1px solid {{opt.border}}; background: {{opt.bg}}; color: {{opt.fg}}">{{opt.label}}</div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 11px">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #6d7681">STATUS</div>
+        <div onClick="{{toggleConfirmed}}" style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 9px 11px; border: 1px solid {{confirmedBorder}}; background: {{confirmedBg}}">
+          <div style="width: 13px; height: 13px; border: 1px solid {{confirmedMark}}; background: {{confirmedFill}}; flex-shrink: 0"></div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: {{confirmedText}}">Confirmed only</div>
+        </div>
+        <div style="font-size: 12.5px; line-height: 1.5; color: #6d7681">Hides analyst forecasts, rumours and expectations.</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 11px; border-top: 1px solid #262b31; padding-top: 20px">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #6d7681">TIGHTEST CHOKEPOINTS</div>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <div style="display: flex; flex-direction: column; gap: 4px"><div style="display: flex; justify-content: space-between"><span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #9aa3ad">CoWoS</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #d98324">0.95</span></div><div style="height: 4px; background: #262b31"><div style="width: 95%; height: 100%; background: #d98324"></div></div></div>
+          <div style="display: flex; flex-direction: column; gap: 4px"><div style="display: flex; justify-content: space-between"><span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #9aa3ad">Litho equip.</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #d98324">0.95</span></div><div style="height: 4px; background: #262b31"><div style="width: 95%; height: 100%; background: #d98324"></div></div></div>
+          <div style="display: flex; flex-direction: column; gap: 4px"><div style="display: flex; justify-content: space-between"><span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #9aa3ad">Logic wafer</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #9aa3ad">0.90</span></div><div style="height: 4px; background: #262b31"><div style="width: 90%; height: 100%; background: #46505a"></div></div></div>
+          <div style="display: flex; flex-direction: column; gap: 4px"><div style="display: flex; justify-content: space-between"><span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #9aa3ad">GPU module</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #9aa3ad">0.85</span></div><div style="height: 4px; background: #262b31"><div style="width: 85%; height: 100%; background: #46505a"></div></div></div>
+          <div style="display: flex; flex-direction: column; gap: 4px"><div style="display: flex; justify-content: space-between"><span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #9aa3ad">Photoresist</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #9aa3ad">0.80</span></div><div style="height: 4px; background: #262b31"><div style="width: 80%; height: 100%; background: #46505a"></div></div></div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #262b31; padding-top: 20px">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #6d7681">NEXT SCHEDULED DATA</div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #e8e4dc">2026-09-10</div>
+        <div style="font-size: 12.5px; line-height: 1.5; color: #6d7681">Taiwan monthly revenue disclosures — TSMC, ASE, Nanya, Winbond.</div>
+      </div>
+
+    </div>
+
+    <!-- ============ entry list ============ -->
+    <div style="display: flex; flex-direction: column; min-height: 0; border-right: 1px solid #262b31">
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 22px; border-bottom: 1px solid #262b31; flex-shrink: 0">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; color: #6d7681">{{visibleLabel}}</div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; color: #46505a">SORTED BY SEVERITY, THEN CONFIDENCE</div>
+      </div>
+
+      <div style="flex-grow: 1; overflow-y: auto; padding: 14px 22px 22px; display: flex; flex-direction: column; gap: 10px">
+        <sc-for list="{{entries}}" as="item" hint-placeholder-count="4">
+          <div onClick="{{item.pick}}" style="cursor: pointer; border: 1px solid {{item.border}}; border-left: 3px solid {{item.accent}}; background: {{item.bg}}; padding: 14px 16px; display: flex; flex-direction: column; gap: 9px">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 14px">
+              <div style="display: flex; gap: 6px; flex-wrap: wrap">
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; padding: 3px 6px; background: {{item.sevBg}}; border: 1px solid {{item.sevBorder}}; color: {{item.sevFg}}; font-weight: 700">{{item.sevLabel}}</div>
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; padding: 3px 6px; border: 1px solid {{item.statusBorder}}; color: {{item.statusFg}}">{{item.statusLabel}}</div>
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; padding: 3px 6px; border: 1px solid #333941; color: #6d7681">{{item.riskType}}</div>
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; padding: 3px 6px; border: 1px solid #333941; color: #6d7681">{{item.commodity}}</div>
+              </div>
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: #46505a; white-space: nowrap">{{item.date}}</div>
+            </div>
+            <div style="font-size: 16px; line-height: 1.35; font-weight: 500; color: {{item.titleColor}}">{{item.title}}</div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; line-height: 1.6; color: #6d7681">{{item.pathShort}}</div>
+            <div style="display: flex; gap: 14px; align-items: center; border-top: 1px dashed #262b31; padding-top: 8px">
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: #46505a">{{item.sourceLine}}</div>
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: #46505a; margin-left: auto">conf {{item.confidence}}</div>
+            </div>
+          </div>
+        </sc-for>
+
+        <sc-if value="{{isEmpty}}" hint-placeholder-val="{{false}}">
+          <div style="border: 1px dashed #333941; padding: 30px 24px; display: flex; flex-direction: column; gap: 8px">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em; color: #6d7681">NOTHING MATCHES THESE FILTERS</div>
+            <div style="font-size: 14px; line-height: 1.6; color: #46505a; max-width: 420px">That is a normal outcome, not a failure — every source below was polled successfully. Widen the severity floor to see the rest of the period.</div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+
+    <!-- ============ detail ============ -->
+    <div style="display: flex; flex-direction: column; min-height: 0; background: #12141a">
+      <sc-if value="{{hasSelection}}" hint-placeholder-val="{{true}}">
+        <div style="display: flex; flex-direction: column; min-height: 0; height: 100%">
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 22px; border-bottom: 1px solid #262b31; flex-shrink: 0">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; color: #6d7681">DRAFTED ALERT</div>
+            <div style="display: flex; gap: 8px">
+              <div style="padding: 6px 11px; border: 1px solid #46505a; color: #9aa3ad; font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.08em">COPY</div>
+              <div style="padding: 6px 11px; border: 1px solid #46505a; color: #9aa3ad; font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.08em">EXPORT MD</div>
+            </div>
+          </div>
+
+          <div style="flex-grow: 1; overflow-y: auto; padding: 20px 22px 26px; display: flex; flex-direction: column; gap: 20px">
+
+            <div style="display: flex; flex-direction: column; gap: 11px">
+              <div style="font-size: 20px; line-height: 1.3; font-weight: 500; color: #e8e4dc">{{sel.title}}</div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap">
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; padding: 3px 6px; background: {{sel.sevBg}}; border: 1px solid {{sel.sevBorder}}; color: {{sel.sevFg}}; font-weight: 700">{{sel.sevLabel}}</div>
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; padding: 3px 6px; border: 1px solid {{sel.statusBorder}}; color: {{sel.statusFg}}">{{sel.statusLabel}}</div>
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; padding: 3px 6px; border: 1px solid #333941; color: #6d7681">{{sel.riskType}}</div>
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; padding: 3px 6px; border: 1px solid #333941; color: #6d7681">HORIZON {{sel.horizon}}</div>
+              </div>
+            </div>
+
+            <div style="font-size: 14.5px; line-height: 1.7; color: #9aa3ad">{{sel.draft}}</div>
+
+            <div style="border: 1px solid #262b31; background: #181c21; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px">
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #6d7681">PROPAGATION PATH · GRAPH TRAVERSAL, NOT GENERATED</div>
+              <div style="display: flex; flex-direction: column; gap: 0">
+                <sc-for list="{{sel.hops}}" as="hop" hint-placeholder-count="4">
+                  <div style="display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 12px">
+                    <div style="display: flex; flex-direction: column; align-items: center">
+                      <div style="width: 7px; height: 7px; border-radius: 50%; background: {{hop.dot}}; margin-top: 5px; flex-shrink: 0"></div>
+                      <div style="width: 1px; flex-grow: 1; background: {{hop.line}}"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-bottom: 12px">
+                      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: {{hop.fg}}">{{hop.name}}</div>
+                      <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #46505a; white-space: nowrap">{{hop.lag}}</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 8px">
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #6d7681">EVIDENCE QUOTE · VERBATIM</div>
+              <div style="border-left: 2px solid #46505a; padding-left: 14px; font-size: 13.5px; line-height: 1.6; color: #6d7681; font-style: italic">{{sel.quote}}</div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 8px">
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #6d7681">MARKET ANNOTATION · ATTACHED, NOT INTERPRETED</div>
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.7; color: #9aa3ad">{{sel.market}}</div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 9px; border-top: 1px solid #262b31; padding-top: 16px">
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #6d7681">SOURCES · {{sel.docCount}} DOCUMENTS CLUSTERED</div>
+              <sc-for list="{{sel.sources}}" as="src" hint-placeholder-count="3">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 5px 0; border-bottom: 1px dashed #262b31">
+                  <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #9aa3ad">{{src.name}}</div>
+                  <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #46505a">{{src.note}}</div>
+                </div>
+              </sc-for>
+            </div>
+
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{noSelection}}" hint-placeholder-val="{{false}}">
+        <div style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 40px">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke-linecap="round">
+            <g stroke="#333941" stroke-width="1.75"><path d="M2.5 5.5L10.5 11.2"/><path d="M2.5 12H10.5"/><path d="M2.5 18.5L10.5 12.8"/><path d="M13.5 12H21.5"/></g>
+            <path d="M12 7V17" stroke="#46505a" stroke-width="2.4"/>
+          </svg>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em; color: #46505a; text-align: center">SELECT AN ENTRY TO READ THE DRAFTED ALERT</div>
+        </div>
+      </sc-if>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"$preview":{"width":1440,"height":980}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { selected: 'shinetsu', minSeverity: 0, commodity: 'ALL', confirmedOnly: false };
+  }
+
+  entryData() {
+    return [
+      {
+        id: 'shinetsu', severity: 4, speculative: false, commodity: 'BOTH', confidence: '0.82',
+        riskType: 'FAB INCIDENT', date: '2026-08-26', docCount: 5, horizon: '6-17 WK',
+        title: 'Shin-Etsu halts one photoresist line at Naoetsu after chemical leak',
+        pathShort: 'shinetsu_naoetsu → photoresist → logic_wafer → cowos → gpu_module',
+        draft: 'Shin-Etsu Chemical suspended production on one photoresist line at its Naoetsu plant following a chemical leak, with restart guidance of two to four weeks. Naoetsu is one of a small number of qualified sources for leading-edge photoresist, a stage the registry scores at 0.80 concentration. Because photoresist feeds both logic and DRAM wafer starts, the effect is not confined to one commodity: logic wafer output would feel it in three to eight weeks, reaching GPU modules six to seventeen weeks out. The company has not said whether qualified inventory at customer fabs covers the gap, and that is the number that decides whether this matters.',
+        quote: '"Production at one line at the Naoetsu plant has been suspended," the company said in a statement.',
+        market: '4063.T −2.1% vs TOPIX (d1) · MU +1.4% vs SOXX (d1) · TSM −0.3% vs SOXX (d1)',
+        hops: [
+          { name: 'shinetsu_naoetsu', lag: 'origin' },
+          { name: 'photoresist', lag: 'conc. 0.80' },
+          { name: 'logic_wafer', lag: '3-8 wk' },
+          { name: 'cowos', lag: '5-14 wk' },
+          { name: 'gpu_module', lag: '6-17 wk' }
+        ],
+        sources: [
+          { name: 'digitimes', note: 'headline only · paywalled' },
+          { name: 'eetimes', note: 'full text' },
+          { name: 'gdelt', note: '3 documents' }
+        ]
+      },
+      {
+        id: 'bis', severity: 4, speculative: false, commodity: 'RAM', confidence: '0.88',
+        riskType: 'EXPORT CONTROL', date: '2026-08-25', docCount: 4, horizon: '2-6 WK',
+        title: 'BIS adds two mainland packaging subsidiaries to the Entity List',
+        pathShort: 'osat → dram_module → server_board → retail_supply',
+        draft: 'The Bureau of Industry and Security published a rule adding two mainland memory-packaging subsidiaries to the Entity List, effective on publication. The immediate constraint is on US-origin equipment and parts servicing those sites rather than on output already in transit. Commodity OSAT packaging is the least concentrated stage in the tracked chain at 0.35, so substitution is plausible — but requalification is not instant, and module assembly feels it one to two weeks out. This is a confirmed regulatory action with a published effective date, so the uncertainty is about the scope of the licence exceptions, not about whether it happened.',
+        quote: '"...is added to the Entity List under the destination of China, effective upon publication in the Federal Register."',
+        market: 'No abnormal return above threshold on d1 for tracked tickers.',
+        hops: [
+          { name: 'osat', lag: 'origin · conc. 0.35' },
+          { name: 'dram_module', lag: '1-2 wk' },
+          { name: 'server_board', lag: '2-4 wk' },
+          { name: 'retail_supply', lag: '4-8 wk' }
+        ],
+        sources: [
+          { name: 'federal_register', note: 'BIS · primary' },
+          { name: 'reuters_tech', note: 'full text' },
+          { name: 'gdelt', note: '2 documents' }
+        ]
+      },
+      {
+        id: 'hynix', severity: 3, speculative: false, commodity: 'RAM', confidence: '0.71',
+        riskType: 'FAB INCIDENT', date: '2026-08-24', docCount: 3, horizon: '1-3 WK',
+        title: 'SK Hynix reports brief power event at Icheon, says no wafer loss',
+        pathShort: 'hynix_icheon → dram_die → hbm_stack → cowos',
+        draft: "SK Hynix disclosed a short power interruption at its Icheon campus and stated that no wafers were lost. Icheon carries both DRAM die and HBM stack output, so a confirmed loss would have propagated into HBM within one to three weeks and CoWoS shortly after. On the company's own account it did not. This is logged rather than escalated: severity reflects the impaired stage's concentration, not the drama of the headline.",
+        quote: '"There was no damage to wafers in process and lines returned to normal operation within the hour."',
+        market: '000660.KS +0.4% vs KOSPI (d1) · no abnormal return above threshold.',
+        hops: [
+          { name: 'hynix_icheon', lag: 'origin' },
+          { name: 'dram_die', lag: 'conc. 0.55' },
+          { name: 'hbm_stack', lag: '1-3 wk' },
+          { name: 'cowos', lag: '2-5 wk' }
+        ],
+        sources: [
+          { name: 'gdelt', note: '2 documents' },
+          { name: 'tomshardware', note: 'full text' }
+        ]
+      },
+      {
+        id: 'taoyuan', severity: 3, speculative: false, commodity: 'BOTH', confidence: '0.66',
+        riskType: 'LOGISTICS', date: '2026-08-23', docCount: 3, horizon: '1-2 WK',
+        title: 'Taoyuan air-cargo backlog runs into a third day after typhoon closure',
+        pathShort: 'route_tw_air → logic_wafer / cowos / gpu_module outbound',
+        draft: 'Outbound air cargo at Taoyuan is still clearing a backlog three days after the typhoon closure, with freight forwarders reporting rolled bookings rather than cancellations. The Taiwan air corridor carries logic wafer, CoWoS and finished GPU module volume, so the exposure here is delivery timing rather than production capacity. Effects are measured in days to two weeks and unwind on their own once slots free up. Worth knowing if you have committed dates in the next fortnight; not worth escalating.',
+        quote: '"Backlogs at Taoyuan are expected to clear by the end of the week, forwarders said."',
+        market: 'No abnormal return above threshold on d1 for tracked tickers.',
+        hops: [
+          { name: 'route_tw_air', lag: 'origin' },
+          { name: 'gpu_module', lag: 'in transit' },
+          { name: 'server_board', lag: '2-4 wk' }
+        ],
+        sources: [
+          { name: 'digitimes', note: 'headline only · paywalled' },
+          { name: 'gdelt', note: '2 documents' }
+        ]
+      },
+      {
+        id: 'cowos', severity: 3, speculative: true, commodity: 'GPU', confidence: '0.54',
+        riskType: 'CAPACITY ALLOC.', date: '2026-08-22', docCount: 6, horizon: '8-20 WK',
+        title: 'TSMC reportedly tightens 2026 CoWoS allocation for second-tier customers',
+        pathShort: 'cowos → gpu_module → server_board',
+        draft: 'Trade press reports that TSMC has revised 2026 CoWoS allocation in favour of its largest accelerator customers, citing unnamed supply-chain sources. TSMC has not confirmed this and no filing supports it, so it is carried as an expectation rather than an event. CoWoS is tied with lithography equipment for the tightest node in the tracked chain at 0.95 concentration, which is why a reallocation rumour still clears the relevance bar. If it holds, second-tier module availability would be affected eight to twenty weeks out.',
+        quote: '"Sources in the supply chain said the allocation had been revised, though TSMC declined to comment."',
+        market: '2330.TW +0.9% vs SOXX (d1) · NVDA +1.1% vs SOXX (d1)',
+        hops: [
+          { name: 'cowos', lag: 'conc. 0.95' },
+          { name: 'gpu_module', lag: '1-3 wk' },
+          { name: 'server_board', lag: '3-7 wk' }
+        ],
+        sources: [
+          { name: 'digitimes', note: 'headline only · paywalled' },
+          { name: 'gdelt', note: '4 documents' },
+          { name: 'eetimes', note: 'full text' }
+        ]
+      },
+      {
+        id: 'ddr5', severity: 2, speculative: true, commodity: 'RAM', confidence: '0.61',
+        riskType: 'PRICING', date: '2026-08-21', docCount: 7, horizon: '4-12 WK',
+        title: 'Q4 DDR5 contract prices expected up 8-13% on server demand',
+        pathShort: 'dram_die → dram_module → server_board → retail_supply',
+        draft: 'Multiple analysts expect Q4 DDR5 contract prices to settle eight to thirteen per cent higher, attributing it to server build rates rather than to any supply impairment. No fab event underlies this and no contract has been signed at those levels, so it is recorded as a forecast. Pricing entries are scored low on severity by design: a price move without a capacity cause tells you about demand, not about the chain.',
+        quote: '"Contract prices are expected to rise by 8% to 13% quarter on quarter, analysts said."',
+        market: 'MU +2.3% vs SOXX (d1) · 000660.KS +1.7% vs KOSPI (d1)',
+        hops: [
+          { name: 'dram_die', lag: 'conc. 0.55' },
+          { name: 'dram_module', lag: '1-3 wk' },
+          { name: 'server_board', lag: '2-5 wk' },
+          { name: 'retail_supply', lag: '4-9 wk' }
+        ],
+        sources: [
+          { name: 'gdelt', note: '5 documents' },
+          { name: 'tomshardware', note: 'full text' },
+          { name: 'eetimes', note: 'full text' }
+        ]
+      }
+    ];
+  }
+
+  decorate(entry, isSelected) {
+    const high = entry.severity >= 4;
+    return Object.assign({}, entry, {
+      sevLabel: 'SEV ' + entry.severity + '/5',
+      sevBg: high ? '#d98324' : 'transparent',
+      sevBorder: high ? '#d98324' : (entry.severity === 3 ? '#6d7681' : '#333941'),
+      sevFg: high ? '#14161a' : (entry.severity === 3 ? '#9aa3ad' : '#6d7681'),
+      statusLabel: entry.speculative ? 'SPECULATIVE' : 'CONFIRMED',
+      statusBorder: entry.speculative ? '#6d7681' : '#7fb3a3',
+      statusFg: entry.speculative ? '#6d7681' : '#7fb3a3',
+      accent: high ? '#d98324' : (entry.severity === 3 ? '#46505a' : '#2c323a'),
+      border: isSelected ? '#46505a' : '#262b31',
+      bg: isSelected ? '#1e2228' : '#1a1e23',
+      titleColor: isSelected ? '#e8e4dc' : '#c9c4ba',
+      sourceLine: entry.docCount + ' docs · ' + entry.sources.map(function (s) { return s.name; }).join(', '),
+      pick: () => this.setState({ selected: entry.id })
+    });
+  }
+
+  chip(active) {
+    return active
+      ? { bg: '#e8e4dc', border: '#e8e4dc', fg: '#14161a' }
+      : { bg: 'transparent', border: '#333941', fg: '#9aa3ad' };
+  }
+
+  renderVals() {
+    const state = this.state;
+    const all = this.entryData();
+
+    const visible = all.filter((e) => {
+      if (e.severity < state.minSeverity) return false;
+      if (state.commodity !== 'ALL' && e.commodity !== state.commodity && e.commodity !== 'BOTH') return false;
+      if (state.confirmedOnly && e.speculative) return false;
+      return true;
+    });
+
+    // If a filter change hides the selected entry, fall through to the top of
+    // the visible list rather than dropping the reader back to an empty panel.
+    const selected = visible.find((e) => e.id === state.selected) || visible[0];
+    const decorated = visible.map((e) => this.decorate(e, selected && e.id === selected.id));
+
+    const sevDefs = [
+      { label: 'ALL', value: 0 }, { label: '3+', value: 3 },
+      { label: '4+', value: 4 }, { label: '5', value: 5 }
+    ];
+    const comDefs = [{ label: 'ALL', value: 'ALL' }, { label: 'RAM', value: 'RAM' }, { label: 'GPU', value: 'GPU' }];
+
+    let selVals = null;
+    if (selected) {
+      const base = this.decorate(selected, true);
+      base.hops = selected.hops.map((hop, index) => ({
+        name: hop.name,
+        lag: hop.lag,
+        dot: index === 0 ? '#d98324' : (index === selected.hops.length - 1 ? '#7fb3a3' : '#46505a'),
+        line: index === selected.hops.length - 1 ? 'transparent' : '#333941',
+        fg: index === 0 || index === selected.hops.length - 1 ? '#e8e4dc' : '#9aa3ad'
+      }));
+      selVals = base;
+    }
+
+    const confirmed = state.confirmedOnly;
+
+    return {
+      entries: decorated,
+      isEmpty: decorated.length === 0,
+      visibleLabel: decorated.length + ' OF ' + all.length + ' SHOWN · 14 SURFACED THIS PERIOD',
+      hasSelection: !!selVals,
+      noSelection: !selVals,
+      sel: selVals || {},
+      severityOptions: sevDefs.map((def) => Object.assign(
+        { label: def.label, pick: () => this.setState({ minSeverity: def.value }) },
+        this.chip(state.minSeverity === def.value)
+      )),
+      commodityOptions: comDefs.map((def) => Object.assign(
+        { label: def.label, pick: () => this.setState({ commodity: def.value }) },
+        this.chip(state.commodity === def.value)
+      )),
+      toggleConfirmed: () => this.setState({ confirmedOnly: !state.confirmedOnly }),
+      confirmedBorder: confirmed ? '#7fb3a3' : '#333941',
+      confirmedBg: confirmed ? '#181f1d' : 'transparent',
+      confirmedMark: confirmed ? '#7fb3a3' : '#46505a',
+      confirmedFill: confirmed ? '#7fb3a3' : 'transparent',
+      confirmedText: confirmed ? '#7fb3a3' : '#9aa3ad'
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,11 +1,14 @@
 """Command line interface.
 
-    python -m semimon.cli collect              # poll every sensor
-    python -m semimon.cli digest               # cluster, classify, render
-    python -m semimon.cli run                  # collect then digest
-    python -m semimon.cli verify               # acceptance checks
-    python -m semimon.cli graph <node_id>      # propagation path
-    python -m semimon.cli resolve "<text>"     # entity resolution
+    python -m semimon.cli                      # chat (the default)
+    python -m semimon.cli "what changed in HBM" # one-shot question
+    python -m semimon.cli collect               # poll every sensor
+    python -m semimon.cli digest                # cluster, classify, render
+    python -m semimon.cli run                   # collect then digest
+    python -m semimon.cli verify                # acceptance checks
+    python -m semimon.cli graph <node_id>       # propagation path
+    python -m semimon.cli resolve "<text>"      # entity resolution
+    python -m semimon.cli serve                 # web UI + JSON API
 """
 
 from __future__ import annotations
@@ -92,6 +95,15 @@ def cmd_resolve(args) -> int:
         print(f"  {node_id:24s} {node.type:8s} {node.name}")
     print(f"\n  stages : {registry.stages_for(hits)}")
     print(f"  tickers: {registry.tickers(hits)}")
+    return 0
+
+
+def cmd_serve(args) -> int:
+    from .api import build_app
+
+    app = build_app(args.db)
+    print(f"CHOKEPOINT serving on http://{args.host}:{args.port}")
+    app.run(host=args.host, port=args.port, debug=args.debug, threaded=True)
     return 0
 
 
@@ -290,9 +302,15 @@ def main(argv=None) -> int:
     verify.add_argument("--no-market", action="store_true")
     verify.set_defaults(func=cmd_verify)
 
+    serve = sub.add_parser("serve", help="serve the web UI + JSON API")
+    serve.add_argument("--host", default="127.0.0.1")
+    serve.add_argument("--port", type=int, default=5000)
+    serve.add_argument("--debug", action="store_true")
+    serve.set_defaults(func=cmd_serve)
+
     # No subcommand -> chat. The app is a chat app; everything else is a tool.
     argv = list(sys.argv[1:] if argv is None else argv)
-    known = {"collect", "digest", "run", "graph", "resolve", "chat", "verify"}
+    known = {"collect", "digest", "run", "graph", "resolve", "chat", "verify", "serve"}
     if not argv or (argv[0].startswith("-") and "--help" not in argv
                     and "-h" not in argv):
         argv = ["chat", *argv]
