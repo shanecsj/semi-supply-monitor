@@ -46,12 +46,27 @@ class _Union:
 
 
 def _parsed_time(value: Optional[str]) -> Optional[datetime]:
+    """Parse the many date formats feeds emit.
+
+    `email.utils.parsedate_to_datetime` handles RFC-822 properly, including
+    alphabetic zone names. That matters: DigiTimes stamps "Thu, 27 Aug 2026
+    04:21:01 GMT", and strptime's %z accepts only numeric offsets like +0000, so
+    a hand-rolled RFC-822 pattern silently dropped every date from the corpus's
+    highest-volume source - degrading clustering, market annotation, and the
+    dates shown to the chat model.
+    """
     if not value:
         return None
-    text = value.strip().replace("Z", "+00:00")
+    text = value.strip()
+    try:
+        from email.utils import parsedate_to_datetime
+        dt = parsedate_to_datetime(text)
+        if dt is not None:
+            return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    except (ValueError, TypeError):
+        pass
     for parse in (
-        lambda t: datetime.fromisoformat(t),
-        lambda t: datetime.strptime(t, "%a, %d %b %Y %H:%M:%S %z"),
+        lambda t: datetime.fromisoformat(t.replace("Z", "+00:00")),
         lambda t: datetime.strptime(t, "%Y-%m-%d"),
     ):
         try:

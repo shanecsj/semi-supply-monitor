@@ -358,3 +358,24 @@ def test_real_environment_wins_over_dotenv(tmp_path, monkeypatch):
 def test_missing_dotenv_is_not_an_error(tmp_path):
     from semimon.dotenv import load_dotenv
     assert load_dotenv(tmp_path / "nope.env") == {}
+
+
+def test_rfc822_alphabetic_timezone_parses():
+    """Regression: DigiTimes stamps "GMT", not "+0000". strptime's %z rejects
+    alphabetic zones, so every date from the corpus's highest-volume source was
+    silently dropped - degrading clustering, market annotation, and the dates
+    shown to the chat model."""
+    from semimon.cluster import _parsed_time
+    got = _parsed_time("Thu, 27 Aug 2026 04:21:01 GMT")
+    assert got is not None and got.year == 2026 and got.day == 27
+
+
+@pytest.mark.parametrize("stamp", [
+    "Tue, 25 Aug 2026 07:00:00 +0000",
+    "Wed, 26 Aug 2026 00:54:37 +0200",
+    "2026-08-25",
+    "2026-08-22T17:00:39+00:00",
+])
+def test_other_feed_date_formats_still_parse(stamp):
+    from semimon.cluster import _parsed_time
+    assert _parsed_time(stamp) is not None
