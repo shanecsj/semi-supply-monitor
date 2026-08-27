@@ -74,6 +74,23 @@ Two things got it from ~5 minutes to ~2 seconds:
 - **Collectors run concurrently and the corpus is cached.** A refresh is ~3s, and
   it only happens when the corpus is older than 20 minutes.
 
+### What is cached
+
+Everything, at two levels.
+
+**News** is stored permanently in `data/semimon.db` — append-only, content-hashed,
+never overwritten. The corpus accumulates across runs, and questions are answered
+*only* from it: the model is forbidden from using outside knowledge and must cite
+document numbers. `--no-refresh` skips the network entirely and answers from what
+is already stored.
+
+**Answers** are cached too, keyed on `(question, corpus fingerprint, model)`. Ask
+the same thing twice and the second is instant instead of 10-25s, and costs no
+subscription quota. The fingerprint is a hash of the document ids in play, so
+collecting new news invalidates cached answers automatically — no expiry policy,
+and no risk of replaying yesterday's answer as though it were current. Backend
+errors are never cached. `--no-cache` bypasses it.
+
 ### Commands
 
 ```bash
@@ -81,6 +98,7 @@ python -m semimon.cli                       # chat (the default)
 python -m semimon.cli "what changed in HBM"  # one-shot question
 python -m semimon.cli --no-refresh          # never touch the network
 python -m semimon.cli --refresh             # force a refresh
+python -m semimon.cli --no-cache            # re-ask the model, ignore cached answers
 python -m semimon.cli collect               # poll sensors only
 python -m semimon.cli digest --out d.md     # full classified digest (slow: ~30min)
 python -m semimon.cli verify                # health check

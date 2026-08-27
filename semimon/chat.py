@@ -374,12 +374,51 @@ class ChatSession:
     """
 
     def __init__(self, registry: Registry, db_path: Path | str = store.DEFAULT_DB,
-                 backend: Optional[ChatBackend] = None, days: Optional[int] = None):
+                 backend: Optional[ChatBackend] = None, days: Optional[int] = None,
+                 use_cache: bool = True):
         self.registry = registry
+        self.db_path = db_path
+        self.use_cache = use_cache
         self.retriever = Retriever(registry, db_path)
         self.count = self.retriever.load(days=days)
         self.backend = backend or get_backend()
         self.history: list[dict] = []
+
+    def _fingerprint(self) -> str:
+        """Identity of the corpus this session is answering from.
+
+        A cached answer is only valid against the documents it was built on, so
+        the key includes them. When collection brings in new news the
+        fingerprint changes and stale answers are simply never hit again - no
+        expiry policy needed, and no risk of replaying yesterday's answer as
+        though it were current.
+        """
+        import hashlib
+        ids = "".join(sorted(d.get("id", "") for d in self.retriever._docs))
+        return hashlib.sha256(ids.encode("utf-8")).hexdigest()[:16]
+
+    def _cache_get(self, question: str) -> Optional[str]:
+        if not self.use_cache:
+            return None
+        model = getattr(self.backend, "model", type(self.backend).__name__)
+        with store.connect(self.db_path) as conn:
+            row = conn.execute(
+                "SELECT answer FROM answer_cache "
+                "WHERE question=? AND fingerprint=? AND model=?",
+                (question.strip().lower(), self._fingerprint(), model)).fetchone()
+        return row["answer"] if row else None
+
+    def _cache_put(self, question: str, answer: str) -> None:
+        if not self.use_cache or not answer or answer.startswith("[backend error]"):
+            return
+        model = getattr(self.backend, "model", type(self.backend).__name__)
+        with store.connect(self.db_path) as conn:
+            conn.execute(
+                "INSERT OR REPLACE INTO answer_cache "
+                "(question, fingerprint, model, answer, created_at) "
+                "VALUES (?,?,?,?,?)",
+                (question.strip().lower(), self._fingerprint(), model, answer,
+                 store.utcnow()))
 
     def _messages(self, question: str, hits: Sequence[Retrieved]) -> list[dict]:
         context = build_context(self.registry, question, hits)
@@ -390,12 +429,16 @@ class ChatSession:
 
     def ask(self, question: str) -> tuple[str, list[Retrieved]]:
         hits = self.retriever.search(question)
+        cached = self._cache_get(question)
+        if cached is not None:
+            return cached, hits
         try:
             answer = self.backend.complete(self._messages(question, hits))
         except FetchError as exc:
             return f"[backend error] {exc}", hits
         self.history.append({"role": "user", "content": question})
         self.history.append({"role": "assistant", "content": answer})
+        self._cache_put(question, answer)
         return answer, hits
 
     def ask_stream(self, question: str):
@@ -405,6 +448,10 @@ class ChatSession:
         the offline extractive path still works unchanged.
         """
         hits = self.retriever.search(question)
+        cached = self._cache_get(question)
+        if cached is not None:
+            yield cached, hits
+            return
         messages = self._messages(question, hits)
         pieces: list[str] = []
         streamer = getattr(self.backend, "stream", None)
@@ -425,3 +472,4 @@ class ChatSession:
         answer = "".join(pieces)
         self.history.append({"role": "user", "content": question})
         self.history.append({"role": "assistant", "content": answer})
+        self._cache_put(question, answer)

@@ -420,3 +420,83 @@ def test_gdelt_disabled_by_default():
     from semimon.sensors.narrative import collect_gdelt, load_sources
     assert load_sources()["gdelt"].get("enabled") is False
     assert collect_gdelt(load_sources()) == []
+
+
+# --------------------------------------------------------------- answer cache
+
+class _CountingBackend:
+    model = "fake-model"
+
+    def __init__(self):
+        self.calls = 0
+
+    def complete(self, messages):
+        self.calls += 1
+        return f"answer {self.calls}"
+
+
+def _session(tmp_path, registry, backend, use_cache=True):
+    from semimon import db as store
+    from semimon.chat import ChatSession
+    db = tmp_path / "t.db"
+    with store.connect(db) as conn:
+        store.store_documents(conn, [{
+            "source": "rss:x", "url": "https://e.com/1", "title": "Micron HBM news",
+            "body": "supply tight", "published_at": "Wed, 26 Aug 2026 12:00:00 GMT",
+            "payload": {"node_ids": ["micron"]},
+        }])
+    return ChatSession(registry, db, backend=backend, use_cache=use_cache)
+
+
+def test_second_identical_question_is_served_from_cache(tmp_path, registry):
+    backend = _CountingBackend()
+    session = _session(tmp_path, registry, backend)
+    first, _ = session.ask("what is happening with HBM?")
+    second, _ = session.ask("what is happening with HBM?")
+    assert first == second
+    assert backend.calls == 1        # the model was asked exactly once
+
+
+def test_cache_key_is_case_and_whitespace_insensitive(tmp_path, registry):
+    backend = _CountingBackend()
+    session = _session(tmp_path, registry, backend)
+    session.ask("What is happening with HBM?")
+    session.ask("  what is HAPPENING with hbm?  ")
+    assert backend.calls == 1
+
+
+def test_new_documents_invalidate_cached_answers(tmp_path, registry):
+    """A cached answer is only valid for the corpus it was built on - otherwise
+    yesterday's answer gets replayed as though it were current."""
+    from semimon import db as store
+    backend = _CountingBackend()
+    session = _session(tmp_path, registry, backend)
+    session.ask("what is happening with HBM?")
+
+    # Collect a genuinely new document, exactly as a refresh would.
+    with store.connect(session.db_path) as conn:
+        store.store_documents(conn, [{
+            "source": "rss:x", "url": "https://e.com/2",
+            "title": "SK Hynix Icheon output update", "body": "new news",
+            "published_at": "Thu, 27 Aug 2026 09:00:00 GMT",
+            "payload": {"node_ids": ["sk_hynix"]},
+        }])
+    session.retriever.load()
+
+    session.ask("what is happening with HBM?")
+    assert backend.calls == 2
+
+
+def test_backend_errors_are_never_cached(tmp_path, registry):
+    backend = _CountingBackend()
+    session = _session(tmp_path, registry, backend)
+    session._cache_put("q", "[backend error] HTTP 500")
+    assert session._cache_get("q") is None
+
+
+def test_no_cache_flag_disables_caching(tmp_path, registry):
+    backend = _CountingBackend()
+    session = _session(tmp_path, registry, backend, use_cache=False)
+    session.ask("what is happening with HBM?")
+    session.ask("what is happening with HBM?")
+    assert backend.calls == 2

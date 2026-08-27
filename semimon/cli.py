@@ -115,7 +115,7 @@ def cmd_chat(args) -> int:
         ensure_fresh(registry, args.db, force=args.refresh)
 
     session = ChatSession(registry, args.db, backend=get_backend(args.offline),
-                          days=args.days)
+                          days=args.days, use_cache=not args.no_cache)
     if session.count == 0:
         print("corpus is empty and collection returned nothing - check your network")
         return 1
@@ -282,6 +282,8 @@ def main(argv=None) -> int:
                       help="force a refresh even if the corpus is fresh")
     chat.add_argument("--no-refresh", action="store_true",
                       help="never touch the network; use the stored corpus")
+    chat.add_argument("--no-cache", action="store_true",
+                      help="bypass the cached-answer store and re-ask the model")
     chat.set_defaults(func=cmd_chat)
 
     verify = sub.add_parser("verify", help="run acceptance checks")
