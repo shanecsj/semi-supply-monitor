@@ -162,6 +162,91 @@ def test_heuristic_never_claims_high_confidence(registry):
 
 # ------------------------------------------------------------------ prefilter
 
+# ------------------------------------------------------- opencode classifier
+
+VALID = {"relevant": True, "commodity": ["RAM"], "risk_type": "fab_incident",
+         "severity": 4, "confidence": 0.8, "is_speculative": False,
+         "evidence_quote": "fire halted output", "entities": ["kioxia"],
+         "horizon": "2-4 weeks", "summary": "Fire at Kioxia."}
+
+
+class FakeBackend:
+    """Stands in for OpenCode Go so provider logic is testable without a key."""
+    model = "glm-5.3"
+
+    def __init__(self, *replies, raises=None):
+        self.replies = list(replies)
+        self.raises = raises
+        self.calls = 0
+
+    def complete(self, messages):
+        self.calls += 1
+        if self.raises:
+            raise self.raises
+        return self.replies.pop(0)
+
+
+@pytest.mark.parametrize("wrapper", [
+    "{raw}",                                   # bare
+    "```json\n{raw}\n```",                     # fenced
+    "Here is the classification:\n\n{raw}\n",  # prefaced
+])
+def test_extract_json_tolerates_model_formatting(wrapper):
+    import json
+    from semimon.classify import _extract_json
+    assert _extract_json(wrapper.format(raw=json.dumps(VALID))) == VALID
+
+
+def test_extract_json_returns_none_on_prose():
+    from semimon.classify import _extract_json
+    assert _extract_json("I cannot answer that.") is None
+
+
+def test_opencode_classifier_parses_fenced_json():
+    import json
+    from semimon.classify import OpenCodeClassifier
+    c = OpenCodeClassifier(backend=FakeBackend(f"```json\n{json.dumps(VALID)}\n```"))
+    result = c.classify("Fire at Kioxia Yokkaichi", ["kioxia"])
+    assert result.risk_type == "fab_incident" and result.severity == 4
+
+
+def test_opencode_classifier_retries_once_on_invalid():
+    import json
+    from semimon.classify import OpenCodeClassifier
+    bad = json.dumps({**VALID, "severity": 99})    # out of ge/le bounds
+    backend = FakeBackend(bad, json.dumps(VALID))
+    c = OpenCodeClassifier(backend=backend)
+    assert c.classify("x", ["kioxia"]) is not None
+    assert backend.calls == 2
+
+
+def test_opencode_classifier_gives_up_after_one_retry():
+    from semimon.classify import OpenCodeClassifier
+    backend = FakeBackend("nope", "still nope")
+    assert OpenCodeClassifier(backend=backend).classify("x", ["kioxia"]) is None
+    assert backend.calls == 2
+
+
+def test_auth_failure_trips_breaker_and_falls_back(registry):
+    """Regression: a bad key fired one doomed request per cluster, burning 25
+    requests of subscription quota to learn the same thing 25 times."""
+    from semimon.classify import HeuristicClassifier, OpenCodeClassifier
+    backend = FakeBackend(raises=RuntimeError("url: HTTP 401 Invalid API key."))
+    c = OpenCodeClassifier(backend=backend, fallback=HeuristicClassifier(registry))
+    first = c.classify("Fire at Kioxia Yokkaichi", ["kioxia_yokkaichi"])
+    second = c.classify("Quake near Hsinchu. Magnitude 6.5", ["tsmc_hsinchu"])
+    assert backend.calls == 1          # breaker tripped; no second API call
+    assert first is not None and second is not None   # heuristic still answers
+
+
+def test_both_providers_share_one_draft_prompt():
+    """A change of backend must not silently change the no-advice constraint."""
+    from semimon.classify import RiskClassification, _draft_prompt
+    prompt = _draft_prompt("text", RiskClassification(**VALID), "A -> B", "", ["x"])
+    assert "Do not give trading or investment advice" in prompt
+    assert "A -> B" in prompt
+
+
 # ----------------------------------------------------------------------- chat
 
 def test_upstream_path_for_consumer_only_node(registry):

@@ -39,14 +39,37 @@ python -m semimon.cli run --out digest.md       # collect + build digest
 `SEMIMON_CONTACT` goes into the User-Agent SEC requires. It is not hardcoded, so
 the repo carries no personal address — set it or the EDGAR sensor will be rejected.
 
-Without `ANTHROPIC_API_KEY` the pipeline still runs end-to-end using a deterministic
-heuristic classifier — blunter, explicitly low-confidence, and labelled as such in
-the output. Set the key to use the model:
+## One key runs everything
+
+A single [OpenCode Go](https://opencode.ai/go) subscription ($10/month) drives both
+the digest classifier and the chat:
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-python -m semimon.cli run --out digest.md
+export OPENCODE_API_KEY=...
+python -m semimon.cli run --out digest.md    # digest via OpenCode
+python -m semimon.cli chat                   # chat via OpenCode
 ```
+
+Provider selection, in order: `SEMIMON_CLASSIFIER` if set (`opencode` /
+`anthropic` / `heuristic`), else OpenCode when `OPENCODE_API_KEY` is present, else
+Anthropic when credentials exist, else the heuristic. The chosen backend is printed
+on every run, because silently degrading to worse judgement is how you end up
+trusting a digest no model ever read.
+
+Anthropic remains supported (`ANTHROPIC_API_KEY`, or an `ant auth login` profile —
+an unset env var does not mean no credentials). Set `SEMIMON_CLASSIFIER=anthropic`
+to prefer it when both keys are present.
+
+**How the two differ.** Anthropic uses `messages.parse` with a Pydantic
+`output_format`, validated server-side. OpenCode Go exposes an OpenAI-compatible
+endpoint whose upstream models (GLM, Kimi, DeepSeek) do not reliably honour strict
+JSON-schema mode, so that path puts the schema in the prompt, parses the response
+tolerantly (bare, fenced, or prefaced JSON), validates with Pydantic locally, and
+retries once with the validation error. Both share one drafting prompt so changing
+backend cannot quietly change the editorial voice or drop the no-advice constraint.
+
+With no key at all the pipeline still runs end-to-end on a deterministic heuristic
+classifier — blunter, `confidence: 0.35`, and labelled as such.
 
 ## Chat
 

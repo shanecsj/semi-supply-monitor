@@ -85,6 +85,31 @@ class Classifier(Protocol):
                  ) -> Optional[RiskClassification]: ...
 
 
+def _draft_prompt(cluster_text: str, classification: "RiskClassification",
+                  propagation: str, market_note: str,
+                  sources: Sequence[str]) -> str:
+    """Shared by every provider, so a change of backend cannot quietly change
+    the editorial voice or drop the no-advice constraint."""
+    stance = "SPECULATIVE" if classification.is_speculative else "CONFIRMED"
+    return f"""\
+Write a short supply-chain alert for a reader tracking RAM and GPU supply.
+
+What happened: {classification.summary}
+Risk type: {classification.risk_type} | Severity {classification.severity}/5 | {stance}
+Propagation path: {propagation or 'not established'}
+Expected horizon: {classification.horizon}
+Market reaction: {market_note or 'none observed'}
+Distinct sources: {', '.join(sources[:6])}
+
+Source material:
+{cluster_text[:4000]}
+
+Write 3-5 sentences. Lead with what happened and who it affects. Use the \
+propagation path to explain why it matters downstream. State plainly if this is \
+unconfirmed. Do not give trading or investment advice. Do not speculate beyond \
+the source material."""
+
+
 class LLMClassifier:
     def __init__(self, model: str = MODEL, effort: str = "low"):
         import anthropic  # imported lazily so the offline path needs no SDK
@@ -114,24 +139,8 @@ class LLMClassifier:
 
     def draft(self, cluster_text: str, classification: RiskClassification,
               propagation: str, market_note: str, sources: Sequence[str]) -> str:
-        prompt = f"""\
-Write a short supply-chain alert for a reader tracking RAM and GPU supply.
-
-What happened: {classification.summary}
-Risk type: {classification.risk_type} | Severity {classification.severity}/5 \
-| {'SPECULATIVE' if classification.is_speculative else 'CONFIRMED'}
-Propagation path: {propagation or 'not established'}
-Expected horizon: {classification.horizon}
-Market reaction: {market_note or 'none observed'}
-Distinct sources: {', '.join(sources[:6])}
-
-Source material:
-{cluster_text[:4000]}
-
-Write 3-5 sentences. Lead with what happened and who it affects. Use the \
-propagation path to explain why it matters downstream. State plainly if this is \
-unconfirmed. Do not give trading or investment advice. Do not speculate beyond \
-the source material."""
+        prompt = _draft_prompt(cluster_text, classification, propagation,
+                               market_note, sources)
         response = self.client.messages.create(
             model=self.model,
             max_tokens=1200,
@@ -142,6 +151,151 @@ the source material."""
         return "".join(
             block.text for block in response.content if block.type == "text"
         ).strip()
+
+
+# ---------------------------------------------------------------- opencode go
+
+def _extract_json(text: str) -> Optional[dict]:
+    """Pull a JSON object out of a completion.
+
+    Open-weight models fence their JSON, preface it with "Here is the...", or
+    both. Anthropic's structured outputs make this unnecessary; the
+    OpenAI-compatible path does not guarantee it, so parse defensively rather
+    than trusting `response_format` to have been honoured.
+    """
+    import json
+
+    if not text:
+        return None
+    candidate = text.strip()
+    fenced = re.search(r"```(?:json)?\s*(.+?)```", candidate, re.DOTALL)
+    if fenced:
+        candidate = fenced.group(1).strip()
+    try:
+        return json.loads(candidate)
+    except ValueError:
+        pass
+    # Fall back to the outermost brace-balanced span.
+    start = candidate.find("{")
+    if start < 0:
+        return None
+    depth = 0
+    for i in range(start, len(candidate)):
+        if candidate[i] == "{":
+            depth += 1
+        elif candidate[i] == "}":
+            depth -= 1
+            if depth == 0:
+                try:
+                    return json.loads(candidate[start:i + 1])
+                except ValueError:
+                    return None
+    return None
+
+
+class OpenCodeClassifier:
+    """Classify via OpenCode Go instead of Anthropic.
+
+    The Anthropic path uses `messages.parse` with a Pydantic output_format, which
+    validates server-side. OpenCode Go exposes an OpenAI-compatible endpoint
+    whose upstream models (GLM, Kimi, DeepSeek) do not reliably support strict
+    JSON-schema mode, so the schema goes in the prompt, the response is parsed
+    tolerantly, and Pydantic validates locally - with one corrective retry.
+    """
+
+    def __init__(self, backend=None, model: Optional[str] = None,
+                 fallback: Optional["HeuristicClassifier"] = None):
+        from .chat import DEFAULT_MODEL, OpenCodeGo
+        if backend is None:
+            key = os.environ.get("OPENCODE_API_KEY")
+            if not key:
+                raise RuntimeError("OPENCODE_API_KEY is not set")
+            backend = OpenCodeGo(key, model=model or DEFAULT_MODEL)
+        self.backend = backend
+        self.model = getattr(backend, "model", model or "opencode-go")
+        self.fallback = fallback
+        self._disabled = False
+
+    def _trip(self, exc: Exception) -> bool:
+        """Stop calling the API after an unrecoverable error.
+
+        A bad key fails identically for every cluster, so without this a digest
+        run fires one doomed request per cluster - 25 requests charged against
+        the subscription rate limit to learn the same thing 25 times.
+        """
+        text = str(exc)
+        if "HTTP 401" in text or "HTTP 403" in text:
+            self._disabled = True
+            print(f"  [warn] OpenCode auth rejected; "
+                  f"{'using heuristic for the rest of this run' if self.fallback else 'skipping remaining clusters'}")
+            return True
+        return False
+
+    def _schema_prompt(self, cluster_text: str, candidates: Sequence[str]) -> str:
+        import json
+        schema = RiskClassification.model_json_schema()
+        return (
+            f"Candidate entity ids: {', '.join(candidates) or '(none)'}\n\n"
+            f"Source material:\n{cluster_text[:6000]}\n\n"
+            f"Return a single JSON object matching this schema, and nothing else "
+            f"- no prose, no code fence:\n{json.dumps(schema, indent=1)[:2500]}"
+        )
+
+    def classify(self, cluster_text: str, candidates: Sequence[str]
+                 ) -> Optional[RiskClassification]:
+        if self._disabled:
+            return self.fallback.classify(cluster_text, candidates) if self.fallback else None
+        messages = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": self._schema_prompt(cluster_text, candidates)},
+        ]
+        for attempt in range(2):
+            try:
+                raw = self.backend.complete(messages)
+            except Exception as exc:  # noqa: BLE001
+                if self._trip(exc):
+                    return (self.fallback.classify(cluster_text, candidates)
+                            if self.fallback else None)
+                print(f"  [warn] opencode classify failed: {str(exc)[:120]}")
+                return None
+            parsed = _extract_json(raw)
+            if parsed is not None:
+                try:
+                    return RiskClassification(**parsed)
+                except Exception as exc:  # noqa: BLE001 - pydantic ValidationError
+                    if attempt == 0:
+                        messages.append({"role": "assistant", "content": raw[:800]})
+                        messages.append({
+                            "role": "user",
+                            "content": f"That did not validate: {str(exc)[:400]}. "
+                                       f"Return only the corrected JSON object.",
+                        })
+                        continue
+                    return None
+            if attempt == 0:
+                messages.append({"role": "assistant", "content": raw[:800]})
+                messages.append({"role": "user",
+                                 "content": "Return only a JSON object, nothing else."})
+        return None
+
+    def draft(self, cluster_text: str, classification: RiskClassification,
+              propagation: str, market_note: str, sources: Sequence[str]) -> str:
+        if self._disabled:
+            return (self.fallback.draft(cluster_text, classification, propagation,
+                                        market_note, sources)
+                    if self.fallback else classification.summary)
+        prompt = _draft_prompt(cluster_text, classification, propagation,
+                               market_note, sources)
+        try:
+            return self.backend.complete(
+                [{"role": "user", "content": prompt}]).strip()
+        except Exception as exc:  # noqa: BLE001
+            if not self._trip(exc):
+                print(f"  [warn] opencode draft failed: {str(exc)[:120]}")
+            if self.fallback:
+                return self.fallback.draft(cluster_text, classification,
+                                           propagation, market_note, sources)
+            return classification.summary
 
 
 # ------------------------------------------------------------------ offline
@@ -265,20 +419,44 @@ def has_credentials() -> bool:
 
 
 def get_classifier(registry: Registry, force_offline: bool = False):
-    """LLM when credentials exist, heuristic otherwise. Prints which, because
-    silently degrading to worse judgement is how you end up trusting a digest
-    that no model ever read."""
+    """Pick a classifier and say which one out loud.
+
+    Order: explicit override, then OpenCode Go, then Anthropic, then heuristic.
+    OpenCode is preferred when its key is present so a single subscription can
+    drive both the digest and the chat; set SEMIMON_CLASSIFIER=anthropic to
+    invert that.
+
+    Announcing the choice matters: silently degrading to worse judgement is how
+    you end up trusting a digest that no model ever read.
+    """
     if force_offline:
         print("  classifier: heuristic (offline, forced)")
         return HeuristicClassifier(registry)
-    if not has_credentials():
-        print("  classifier: heuristic (no Anthropic credentials found - set "
-              "ANTHROPIC_API_KEY or run `ant auth login`)")
+
+    choice = os.environ.get("SEMIMON_CLASSIFIER", "auto").lower()
+    if choice == "heuristic":
+        print("  classifier: heuristic (SEMIMON_CLASSIFIER=heuristic)")
         return HeuristicClassifier(registry)
-    try:
-        classifier = LLMClassifier()
-        print(f"  classifier: {MODEL}")
-        return classifier
-    except Exception as exc:  # noqa: BLE001
-        print(f"  [warn] LLM unavailable ({exc}); falling back to heuristic")
-        return HeuristicClassifier(registry)
+
+    want_opencode = choice == "opencode" or (
+        choice == "auto" and os.environ.get("OPENCODE_API_KEY"))
+    if want_opencode:
+        try:
+            classifier = OpenCodeClassifier(
+                fallback=HeuristicClassifier(registry))
+            print(f"  classifier: opencode-go / {classifier.model}")
+            return classifier
+        except Exception as exc:  # noqa: BLE001
+            print(f"  [warn] OpenCode classifier unavailable ({exc})")
+
+    if choice in ("auto", "anthropic") and has_credentials():
+        try:
+            classifier = LLMClassifier()
+            print(f"  classifier: {MODEL}")
+            return classifier
+        except Exception as exc:  # noqa: BLE001
+            print(f"  [warn] Anthropic classifier unavailable ({exc})")
+
+    print("  classifier: heuristic (no model credentials found - set "
+          "OPENCODE_API_KEY, or ANTHROPIC_API_KEY)")
+    return HeuristicClassifier(registry)
