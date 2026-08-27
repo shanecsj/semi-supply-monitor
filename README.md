@@ -26,112 +26,70 @@ implied a direction would have been confidently backwards. So this tool reports
 
 ## Quickstart
 
-```bash
-conda create -n semi python=3.12 requests pyyaml pandas numpy scikit-learn lxml -y
-conda activate semi
-pip install anthropic
-
-export SEMIMON_CONTACT="you@example.com"        # required by SEC EDGAR, else 403
-python -m semimon.cli verify                    # acceptance checks, no API key needed
-python -m semimon.cli run --out digest.md       # collect + build digest
+```powershell
+cd D:\path	o\semi-supply-monitor
+& "path	o\envs\semi\python.exe" -m semimon.cli
 ```
 
-`SEMIMON_CONTACT` goes into the User-Agent SEC requires. It is not hardcoded, so
-the repo carries no personal address — set it or the EDGAR sensor will be rejected.
+That is the whole app. No subcommand needed — it refreshes if the corpus is
+stale, prints the latest headlines grouped by RAM / GPU / Shipping, and drops
+you at a prompt to ask about any of it.
 
-## Configuration
+```
+  corpus is 9 min old; skipping refresh
+  corpus: 28 documents
 
-Copy the example and fill in your key:
+RAM:
+  Aug 27  Kioxia weighs third Kitakami fab as NAND demand rises  (digitimes)
+  Aug 27  SK Hynix questions PIM as thermal, packaging limits constrain HBM  (digitimes)
+GPU:
+  Aug 27  Nvidia reportedly shifts HBM4 mix toward 8-high as memory supply stays tight  (digitimes)
 
-```bash
-cp .env.example .env      # Windows: copy .env.example .env
+  ask a question about any of this ('exit' to quit, 'latest' to re-list)
+
+>
 ```
 
-`.env` is gitignored and loaded automatically at import. Two behaviours worth
-knowing: a real environment variable always overrides the file, and an unfilled
-`<placeholder>` is skipped rather than passed along as a key (which would produce
-a confusing 401 instead of an honest "no credentials found").
+### Speed, honestly
 
-Do **not** put `PYTHONIOENCODING` in `.env` — Python reads it at interpreter
-startup, before any loader runs, so it has no effect there. The CLI reconfigures
-stdout to UTF-8 itself.
+| | |
+|---|---|
+| Warm start to headlines | **~2s** |
+| Cold start (stale corpus, refreshes first) | **~5s** |
+| Asking a question (hosted LLM) | **10–25s, and it varies 2–3× run to run** |
 
-## One key runs everything
+The headline view is deliberately **local and model-free** — retrieval, entity
+resolution and the dependency graph all run on your machine in milliseconds.
+That is why "what changed?" is instant. A hosted LLM call to OpenCode Go costs
+10–25 seconds no matter what you do to the prompt (measured across seven models;
+the variance is server-side, not prompt-side), so the model is reserved for
+questions you actually choose to ask.
 
-A single [OpenCode Go](https://opencode.ai/go) subscription ($10/month) drives both
-the digest classifier and the chat:
+Two things got it from ~5 minutes to ~2 seconds:
 
-```bash
-export OPENCODE_API_KEY=...
-python -m semimon.cli run --out digest.md    # digest via OpenCode
-python -m semimon.cli chat                   # chat via OpenCode
-```
+- **GDELT is off by default.** It failed on every single run from a residential
+  IP — SSL handshake timeouts, connection resets, 429s — and each failed query
+  burns ~84s in timeouts and backoff. RSS supplies every useful document anyway.
+  Set `enabled: true` in `config/sources.yaml` or `SEMIMON_USE_GDELT=1` to try it.
+- **Collectors run concurrently and the corpus is cached.** A refresh is ~3s, and
+  it only happens when the corpus is older than 20 minutes.
 
-Provider selection, in order: `SEMIMON_CLASSIFIER` if set (`opencode` /
-`anthropic` / `heuristic`), else OpenCode when `OPENCODE_API_KEY` is present, else
-Anthropic when credentials exist, else the heuristic. The chosen backend is printed
-on every run, because silently degrading to worse judgement is how you end up
-trusting a digest no model ever read.
-
-Anthropic remains supported (`ANTHROPIC_API_KEY`, or an `ant auth login` profile —
-an unset env var does not mean no credentials). Set `SEMIMON_CLASSIFIER=anthropic`
-to prefer it when both keys are present.
-
-**How the two differ.** Anthropic uses `messages.parse` with a Pydantic
-`output_format`, validated server-side. OpenCode Go exposes an OpenAI-compatible
-endpoint whose upstream models (GLM, Kimi, DeepSeek) do not reliably honour strict
-JSON-schema mode, so that path puts the schema in the prompt, parses the response
-tolerantly (bare, fenced, or prefaced JSON), validates with Pydantic locally, and
-retries once with the validation error. Both share one drafting prompt so changing
-backend cannot quietly change the editorial voice or drop the no-advice constraint.
-
-With no key at all the pipeline still runs end-to-end on a deterministic heuristic
-classifier — blunter, `confidence: 0.35`, and labelled as such.
-
-## Chat
-
-Ask questions about the news the monitor has collected.
+### Commands
 
 ```bash
-export OPENCODE_API_KEY=...                     # https://opencode.ai/go, $10/month
-python -m semimon.cli chat                      # REPL
-python -m semimon.cli chat "what is happening with HBM supply"
-python -m semimon.cli chat --list-models        # live model ids, no key needed
+python -m semimon.cli                       # chat (the default)
+python -m semimon.cli "what changed in HBM"  # one-shot question
+python -m semimon.cli --no-refresh          # never touch the network
+python -m semimon.cli --refresh             # force a refresh
+python -m semimon.cli collect               # poll sensors only
+python -m semimon.cli digest --out d.md     # full classified digest (slow: ~30min)
+python -m semimon.cli verify                # health check
+python -m semimon.cli graph hynix_icheon    # propagation path for a node
 ```
 
-**This is grounded retrieval, not a chatbot.** The model may only use documents
-this system actually collected, must cite them by number, and is instructed to say
-what is missing rather than fill a gap from general knowledge. For a supply-chain
-tool that constraint is the point: a fluent invention about a fab fire is worse than
-no answer, because the reader cannot tell the two apart.
-
-Three things enter the context window — retrieved documents (TF-IDF plus an
-entity-overlap boost), **propagation paths from the dependency graph**, and the
-question. The graph is what lets it answer *"why would an HBM problem affect Nvidia
-GPUs?"* when no single article says so: the answer is `SK Hynix → DRAM die → HBM
-stack (1-3wk) → CoWoS (2-5wk) → GPU module`, which is graph traversal, not news.
-Consumer-side nodes like NVIDIA and AMD supply nothing downstream, so they get the
-*upstream* view of what feeds them.
-
-Backend is [OpenCode Go](https://opencode.ai/go) via its OpenAI-compatible endpoint
-(`https://opencode.ai/zen/go/v1/chat/completions`), behind a `ChatBackend` protocol
-so the provider is swappable. Default model `glm-5.3`; override with
-`SEMIMON_CHAT_MODEL` (e.g. `deepseek-v4-flash` for a higher request quota,
-`kimi-k3` or `deepseek-v4-pro` for harder questions). Without a key it degrades to
-extractive retrieval — it shows you the matching documents and declines to
-synthesise, rather than faking an answer.
-
-Note this is independent of the Anthropic classifier used for the digest; the two
-providers do not interact.
-
-### Other commands
-
-```bash
-python -m semimon.cli graph hynix_icheon        # propagation path for one node
-python -m semimon.cli resolve "SK Hynix Icheon fab halted"
-python -m semimon.cli collect --days 14         # poll sensors only
-python -m semimon.cli digest --offline          # force heuristic classifier
-```
+`digest` is the original batch report. It classifies every cluster with the LLM,
+which at 10–25s per call takes ~30 minutes. It is no longer on the interactive
+path.
 
 ## Architecture
 

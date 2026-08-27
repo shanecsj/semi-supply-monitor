@@ -108,21 +108,31 @@ def cmd_chat(args) -> int:
             return 1
         return 0
 
+    from .chat import LATEST_QUESTION, ensure_fresh
+
     registry = load_registry()
+    if not args.no_refresh:
+        ensure_fresh(registry, args.db, force=args.refresh)
+
     session = ChatSession(registry, args.db, backend=get_backend(args.offline),
                           days=args.days)
     if session.count == 0:
-        print("corpus is empty - run `python -m semimon.cli collect` first")
+        print("corpus is empty and collection returned nothing - check your network")
         return 1
     print(f"  corpus: {session.count} documents")
 
     def answer(question: str) -> None:
-        text, hits = session.ask(question)
         print()
-        print(text)
-        if hits and args.sources:
+        captured: list = []
+        for chunk, hits in session.ask_stream(question):
+            if hits:
+                captured = hits
+            sys.stdout.write(chunk)
+            sys.stdout.flush()      # unbuffered, or streaming buys nothing
+        print()
+        if captured and args.sources:
             print("\nsources:")
-            for hit in hits[:6]:
+            for hit in captured[:6]:
                 print(f"  [{hit.index}] {hit.title[:78]}")
                 if hit.url:
                     print(f"      {hit.url}")
@@ -131,7 +141,14 @@ def cmd_chat(args) -> int:
         answer(" ".join(args.question))
         return 0
 
-    print("  ask a question, or 'exit' to quit\n")
+    # Bare invocation leads with the latest headlines, computed locally with no
+    # model call, so "what changed?" is answered instantly. The model is for
+    # follow-up questions, where waiting is a choice the reader just made.
+    from .chat import latest_brief
+    print()
+    print(latest_brief(registry, session.retriever._docs))
+    print("\n  ask a question about any of this ('exit' to quit, "
+          "'latest' to re-list)\n")
     while True:
         try:
             question = input("> ").strip()
@@ -140,6 +157,12 @@ def cmd_chat(args) -> int:
             return 0
         if question.lower() in {"exit", "quit", ":q"}:
             return 0
+        if question.lower() in {"latest", "news", "l"}:
+            from .chat import latest_brief
+            print()
+            print(latest_brief(registry, session.retriever._docs))
+            print()
+            continue
         if question:
             answer(question)
             print()
@@ -221,7 +244,7 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(prog="semimon",
                                      description="RAM & GPU supply-chain news monitor")
     parser.add_argument("--db", default=str(store.DEFAULT_DB))
-    sub = parser.add_subparsers(dest="command", required=True)
+    sub = parser.add_subparsers(dest="command")
 
     collect = sub.add_parser("collect", help="poll every sensor")
     collect.add_argument("--days", type=int, default=7)
@@ -255,11 +278,24 @@ def main(argv=None) -> int:
     chat.add_argument("--no-sources", dest="sources", action="store_false")
     chat.add_argument("--list-models", action="store_true",
                       help="list OpenCode Go model ids and exit")
+    chat.add_argument("--refresh", action="store_true",
+                      help="force a refresh even if the corpus is fresh")
+    chat.add_argument("--no-refresh", action="store_true",
+                      help="never touch the network; use the stored corpus")
     chat.set_defaults(func=cmd_chat)
 
     verify = sub.add_parser("verify", help="run acceptance checks")
     verify.add_argument("--no-market", action="store_true")
     verify.set_defaults(func=cmd_verify)
+
+    # No subcommand -> chat. The app is a chat app; everything else is a tool.
+    argv = list(sys.argv[1:] if argv is None else argv)
+    known = {"collect", "digest", "run", "graph", "resolve", "chat", "verify"}
+    if not argv or (argv[0].startswith("-") and "--help" not in argv
+                    and "-h" not in argv):
+        argv = ["chat", *argv]
+    elif argv[0] not in known and not argv[0].startswith("-"):
+        argv = ["chat", *argv]          # `semimon "what changed?"` just works
 
     args = parser.parse_args(argv)
     return args.func(args)

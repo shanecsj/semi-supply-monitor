@@ -109,6 +109,20 @@ class OpenCodeGo:
             raise FetchError(f"no choices in response: {str(data)[:200]}")
         return (choices[0].get("message") or {}).get("content", "").strip()
 
+    def stream(self, messages: list[dict]):
+        """Yield text deltas. Same request as complete(), streamed."""
+        from .sensors.base import post_stream
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": 0.2,
+            "max_tokens": 1200,
+        }
+        yield from post_stream(
+            f"{self.base_url}/chat/completions", payload,
+            headers={"Authorization": f"Bearer {self.api_key}"},
+        )
+
     @staticmethod
     def models(base_url: str = OPENCODE_BASE) -> list[str]:
         """Live model ids. This endpoint needs no authentication."""
@@ -262,6 +276,95 @@ def get_backend(force_offline: bool = False) -> ChatBackend:
     return OpenCodeGo(key, model=DEFAULT_MODEL)
 
 
+# The question a bare `semimon chat` answers before handing over the prompt.
+LATEST_QUESTION = ("What is the latest on RAM and GPU supply and shipping? "
+                   "At most 4 short bullets, one line each, newest first. "
+                   "Cite [n]. No preamble, no headings.")
+
+
+def latest_brief(registry: Registry, docs: Sequence[dict], limit: int = 8) -> str:
+    """The newest headlines, grouped, with zero model involvement.
+
+    This exists because a hosted LLM call to OpenCode Go costs 10-25s and swings
+    by 2-3x run to run, which is not a "latest news" experience. Retrieval,
+    entity resolution and the dependency graph are all local and instant, and
+    they already answer "what changed?" - the model is only needed once you want
+    to *ask* something. So the opener is deterministic and the model is on demand.
+    """
+    from .cluster import _parsed_time
+
+    RAM = {"dram_die", "nand_die", "hbm_stack", "dram_module", "ssd"}
+    GPU = {"logic_wafer", "cowos", "gpu_module"}
+    SHIP = {"route", }
+
+    dated = []
+    for doc in docs:
+        when = _parsed_time(doc.get("published_at")) or _parsed_time(
+            doc.get("fetched_at"))
+        if when:
+            dated.append((when, doc))
+    dated.sort(key=lambda pair: pair[0], reverse=True)
+
+    buckets: dict[str, list[str]] = {"RAM": [], "GPU": [], "Shipping": [],
+                                     "Other": []}
+    for when, doc in dated[:limit * 3]:
+        node_ids = (doc.get("payload") or {}).get("node_ids") or []
+        stages = set(registry.stages_for(node_ids))
+        # Consumer-side nodes (NVIDIA, AMD) supply nothing, so stages_for is
+        # empty for them and every Nvidia story fell into "Other". Fold in what
+        # they consume as well.
+        for node_id in node_ids:
+            node = registry.nodes.get(node_id)
+            if node is not None:
+                stages.update(node.consumes)
+        is_route = any(registry.nodes[n].type == "route"
+                       for n in node_ids if n in registry.nodes)
+        key = ("Shipping" if is_route else
+               "RAM" if stages & RAM else
+               "GPU" if stages & GPU else "Other")
+        if len(buckets[key]) >= limit:
+            continue
+        source = (doc.get("source") or "").replace("rss:", "")
+        buckets[key].append(
+            f"  {when:%b %d}  {(doc.get('title') or '').strip()[:96]}  ({source})")
+
+    lines = []
+    for key in ("RAM", "GPU", "Shipping", "Other"):
+        if buckets[key]:
+            lines.append(f"{key}:")
+            lines += buckets[key]
+            lines.append("")
+    if not lines:
+        return "No documents in the corpus yet."
+    return "\n".join(lines).rstrip()
+
+# Corpus older than this triggers a refresh on chat start. Long enough that
+# consecutive questions cost no network, short enough that "latest" is honest.
+STALE_AFTER_MINUTES = 20
+
+
+def ensure_fresh(registry: Registry, db_path: Path | str = store.DEFAULT_DB,
+                 max_age_minutes: float = STALE_AFTER_MINUTES,
+                 force: bool = False) -> None:
+    """Refresh the corpus only when it is stale.
+
+    Chat has to feel instant, and a warm corpus needs no network at all. When a
+    refresh is needed it runs every source concurrently, which costs ~3s rather
+    than the ~5 minutes a sequential run with GDELT enabled used to take.
+    """
+    from .digest import collect, corpus_age_minutes
+
+    age = corpus_age_minutes(db_path)
+    if not force and age is not None and age <= max_age_minutes:
+        print(f"  corpus is {age:.0f} min old; skipping refresh")
+        return
+    if age is None:
+        print("  corpus empty; collecting...")
+    else:
+        print(f"  corpus is {age:.0f} min old; refreshing...")
+    collect(registry, db_path, parallel=True)
+
+
 class ChatSession:
     """Multi-turn session. History is carried, but every turn re-retrieves.
 
@@ -278,16 +381,47 @@ class ChatSession:
         self.backend = backend or get_backend()
         self.history: list[dict] = []
 
-    def ask(self, question: str) -> tuple[str, list[Retrieved]]:
-        hits = self.retriever.search(question)
+    def _messages(self, question: str, hits: Sequence[Retrieved]) -> list[dict]:
         context = build_context(self.registry, question, hits)
         messages = [{"role": "system", "content": SYSTEM_PROMPT}]
         messages += self.history[-6:]          # keep the tail, not the world
         messages.append({"role": "user", "content": context})
+        return messages
+
+    def ask(self, question: str) -> tuple[str, list[Retrieved]]:
+        hits = self.retriever.search(question)
         try:
-            answer = self.backend.complete(messages)
+            answer = self.backend.complete(self._messages(question, hits))
         except FetchError as exc:
             return f"[backend error] {exc}", hits
         self.history.append({"role": "user", "content": question})
         self.history.append({"role": "assistant", "content": answer})
         return answer, hits
+
+    def ask_stream(self, question: str):
+        """Yield (chunk, hits) as the answer arrives; hits on the first yield.
+
+        Falls back to a single blocking call when the backend cannot stream, so
+        the offline extractive path still works unchanged.
+        """
+        hits = self.retriever.search(question)
+        messages = self._messages(question, hits)
+        pieces: list[str] = []
+        streamer = getattr(self.backend, "stream", None)
+        try:
+            if streamer is None:
+                text = self.backend.complete(messages)
+                pieces.append(text)
+                yield text, hits
+            else:
+                first = True
+                for piece in streamer(messages):
+                    pieces.append(piece)
+                    yield piece, (hits if first else [])
+                    first = False
+        except FetchError as exc:
+            yield f"[backend error] {exc}", hits
+            return
+        answer = "".join(pieces)
+        self.history.append({"role": "user", "content": question})
+        self.history.append({"role": "assistant", "content": answer})

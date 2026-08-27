@@ -28,11 +28,65 @@ from .sensors.narrative import collect_narrative
 ALERT_SEVERITY = 4
 
 
+def corpus_age_minutes(db_path: Path | str = store.DEFAULT_DB) -> Optional[float]:
+    """Minutes since the newest document was fetched, or None if empty."""
+    try:
+        with store.connect(db_path) as conn:
+            row = conn.execute(
+                "SELECT MAX(fetched_at) AS newest FROM raw_documents").fetchone()
+    except Exception:  # noqa: BLE001
+        return None
+    if not row or not row["newest"]:
+        return None
+    from .cluster import _parsed_time
+    newest = _parsed_time(row["newest"])
+    if newest is None:
+        return None
+    return (datetime.now(timezone.utc) - newest).total_seconds() / 60.0
+
+
+def collect_parallel(registry: Registry, days: int = 7) -> list[dict]:
+    """Fetch every source concurrently.
+
+    The collectors are independent network I/O, so running them in sequence just
+    adds their latencies: 3.4 + 2.1 + 1.4 + 0.9s. In parallel the run costs
+    whatever the slowest single source costs.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
+    from .sensors.hard import edgar_filings, federal_register, usgs_quakes
+    from .sensors.narrative import (collect_gdelt, collect_rss, load_sources,
+                                    prefilter)
+    from .sensors.base import safe
+
+    config = load_sources()
+    jobs = {
+        "rss": lambda: collect_rss(config),
+        "gdelt": lambda: collect_gdelt(config),      # no-op unless enabled
+        "usgs": lambda: safe("usgs", usgs_quakes, registry, days=days),
+        "edgar": lambda: safe("edgar", edgar_filings, registry, days=max(days, 14)),
+        "fedreg": lambda: safe("fedreg", federal_register, days=max(days, 30)),
+    }
+    with ThreadPoolExecutor(max_workers=len(jobs)) as pool:
+        futures = {name: pool.submit(fn) for name, fn in jobs.items()}
+        results = {name: future.result() for name, future in futures.items()}
+
+    narrative_raw = results["rss"] + results["gdelt"]
+    kept = prefilter(narrative_raw, registry)
+    hard_docs = results["usgs"] + results["edgar"] + results["fedreg"]
+    print(f"  {len(narrative_raw)} narrative -> {len(kept)} relevant, "
+          f"{len(hard_docs)} from hard sensors")
+    return hard_docs + kept
+
+
 def collect(registry: Registry, db_path: Path | str = store.DEFAULT_DB,
-            days: int = 7) -> int:
+            days: int = 7, parallel: bool = True) -> int:
     """Run every sensor and append new documents. Returns count of new rows."""
     print("collecting...")
-    docs = collect_hard(registry, days=days) + collect_narrative(registry)
+    if parallel:
+        docs = collect_parallel(registry, days=days)
+    else:
+        docs = collect_hard(registry, days=days) + collect_narrative(registry)
     with store.connect(db_path) as conn:
         new = store.store_documents(conn, docs)
         # Hard-sensor documents arrive pre-resolved, so record them as events

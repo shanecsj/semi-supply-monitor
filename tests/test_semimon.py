@@ -379,3 +379,44 @@ def test_rfc822_alphabetic_timezone_parses():
 def test_other_feed_date_formats_still_parse(stamp):
     from semimon.cluster import _parsed_time
     assert _parsed_time(stamp) is not None
+
+
+# ---------------------------------------------------------------- latest brief
+
+def test_latest_brief_buckets_consumer_nodes_as_gpu(registry):
+    """Regression: NVIDIA supplies nothing, so stages_for() is empty for it and
+    every Nvidia story fell into 'Other' instead of GPU."""
+    from semimon.chat import latest_brief
+    docs = [{"title": "Nvidia caps growth on supply", "source": "rss:x",
+             "published_at": "Wed, 26 Aug 2026 12:00:00 GMT",
+             "payload": {"node_ids": ["nvidia"]}}]
+    out = latest_brief(registry, docs)
+    assert "GPU:" in out and "Nvidia caps growth" in out
+
+
+def test_latest_brief_separates_ram_gpu_and_shipping(registry):
+    from semimon.chat import latest_brief
+    docs = [
+        {"title": "Micron HBM update", "source": "rss:x",
+         "published_at": "Wed, 26 Aug 2026 12:00:00 GMT",
+         "payload": {"node_ids": ["micron"]}},
+        {"title": "Kaohsiung port strike", "source": "rss:x",
+         "published_at": "Wed, 26 Aug 2026 11:00:00 GMT",
+         "payload": {"node_ids": ["port_kaohsiung"]}},
+    ]
+    out = latest_brief(registry, docs)
+    assert "RAM:" in out and "Shipping:" in out
+    assert out.index("RAM:") < out.index("Shipping:")
+
+
+def test_latest_brief_needs_no_model_or_network(registry):
+    """The opener must be purely local - that is the whole reason it exists."""
+    from semimon.chat import latest_brief
+    assert "No documents" in latest_brief(registry, [])
+
+
+def test_gdelt_disabled_by_default():
+    """GDELT failed on every run and each failure costs ~84s of timeouts."""
+    from semimon.sensors.narrative import collect_gdelt, load_sources
+    assert load_sources()["gdelt"].get("enabled") is False
+    assert collect_gdelt(load_sources()) == []

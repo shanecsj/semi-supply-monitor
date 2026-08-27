@@ -13,6 +13,7 @@ Doing it in that order is what keeps the running cost near zero.
 
 from __future__ import annotations
 
+import os
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -117,6 +118,9 @@ def gdelt(query: str, timespan: str = "7d", maxrecords: int = 250,
 
 def collect_gdelt(config: dict) -> list[dict]:
     section = config.get("gdelt", {})
+    enabled = section.get("enabled", False) or os.environ.get("SEMIMON_USE_GDELT")
+    if not enabled:
+        return []
     docs: list[dict] = []
     for entry in section.get("queries", []):
         docs += safe(f"gdelt:{entry['name']}", gdelt, entry["query"],
