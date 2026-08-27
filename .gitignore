@@ -1,7 +1,19 @@
+# secrets - never commit
+.env
+.env.*
+!.env.example
+
+# data & generated output
 data/
 *.db
 digest*.md
+
+# python
 __pycache__/
 *.pyc
-.pypath
 .pytest_cache/
+.pypath
+
+# go
+chat/chat
+chat/chat.exe
